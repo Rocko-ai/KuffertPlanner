@@ -153,10 +153,20 @@
         function addCategoryToList() { hideError();const cPS=itemCategoryInput.value.trim();if(cPS){const cP=parseCategoryPath(cPS);if(cP.length===0){showError('Ugyldigt kategori format.');return;}const fP=cP.join(` ${CATEGORY_SEPARATOR} `);const eO=Array.from(categorySuggestions.options).map(o=>o.value);if(!eO.includes(fP)){const o=document.createElement('option');o.value=fP;categorySuggestions.appendChild(o);showAlertModal(`Stien "${fP}" er tilføjet til forslagslisten.`);itemCategoryInput.value='';}else{showAlertModal(`Stien "${fP}" findes allerede på forslagslisten.`);}}else{showError('Skriv en kategori/sti i kategorifeltet først.');itemCategoryInput.focus();}}
 
         // === Event Listeners ===
-        addItemBtn.addEventListener('click', addItem);
-        addCategoryBtn.addEventListener('click', addCategoryToList);
-        itemNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { if (itemCategoryInput.value.trim()) { addItem(); } else { itemCategoryInput.focus(); } } });
-        itemCategoryInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { if (itemNameInput.value.trim()) { addItem(); } else { itemNameInput.focus(); } } });
+        addItemBtn.addEventListener('touchend', (e) => {
+            console.log("addItemBtn touchend triggered");
+            e.preventDefault(); // Forhindr evt. efterfølgende 'click' event
+            addItem();
+        });
+        // Behold click som fallback (selvom preventDefault *burde* stoppe den)
+        addItemBtn.addEventListener('click', (e) => {
+            console.log("addItemBtn click triggered");
+      
+        });
+
+        addCategoryBtn.addEventListener('click', addCategoryToList); // Denne bruger kun click, hvilket er ok
+        itemNameInput.addEventListener('keypress', (e)=>{if(e.key==='Enter'){if(itemCategoryInput.value.trim()){addItem();}else{itemCategoryInput.focus();}}});
+        itemCategoryInput.addEventListener('keypress', (e)=>{if(e.key==='Enter'){if(itemNameInput.value.trim()){addItem();}else{itemNameInput.focus();}}});
 
         // --- NYT: iOS Keyboard Workaround ---
         // Tilføj event listeners for at forsøge at tvinge fokus på inputfelter
