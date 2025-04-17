@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cozy Kuffert</title>
-    <link rel = "apple-touch-icon" href = "briefcase.jpeg">
+    <link rel="apple-touch-icon" href="briefcase.jpeg">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -42,7 +43,7 @@
         /* --- Kuffert Indhold & Kategori Styling --- */
         #suitcaseContent h2 { color: #9d174d; border-bottom-color: #fbcfe8; }
         #emptyMessage { color: #fda4af; }
-        .category-node { border-color: #fce7f3; box-shadow: 0 1px 3px rgba(219, 112, 147, 0.05); margin-bottom: 0.75rem; page-break-inside: avoid; }
+        .category-node { border-color: #fce7f3; box-shadow: 0 1px 3px rgba(219, 112, 147, 0.05); margin-bottom: 0.75rem; }
         .category-header { background-image: linear-gradient(to bottom, #ffffff, #fdf2f8); border-bottom-color: #fce7f3; cursor: pointer; user-select: none; transition: background-color 0.2s ease; }
         .category-header:hover { background-image: linear-gradient(to bottom, #fdf2f8, #fce7f3); }
         .category-header h3 { color: #be185d; }
@@ -54,7 +55,7 @@
         .subcategory-container .subcategory-container { margin-left: 0.75rem; padding-left: 0.75rem; }
 
         /* --- Item Styling --- */
-        .item-div { border-color: #fce7f3; background-color: #ffffff; transition: opacity 0.3s ease; position: relative; cursor: grab; page-break-inside: avoid; }
+        .item-div { border-color: #fce7f3; background-color: #ffffff; transition: opacity 0.3s ease; position: relative; cursor: grab; }
         .item-div:active { cursor: grabbing; }
         .item-div.packed { opacity: 0.6; }
         .item-div.packed .item-name { text-decoration: line-through; }
@@ -99,9 +100,6 @@
         .modal-button-ok:hover { background-image: linear-gradient(to right, #818cf8, #6366f1); box-shadow: 0 2px 5px rgba(0,0,0,0.15); }
         #exportTextArea { font-family: monospace; font-size: 0.875rem; line-height: 1.5; border: 1px solid #fbcfe8; background-color: #fdf2f8; min-height: 200px; }
 
-        /* --- Print Styles --- */
-        /* Fjernet @media print sektion - håndteres nu via JavaScript */
-
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -117,17 +115,17 @@
         <div class="add-item-section mb-8 p-4 border rounded-lg">
             <h2 class="add-item-title text-xl font-semibold mb-4">Tilføj en ting</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div> <label for="itemName" class="block text-sm mb-1">Navn på ting:</label> <input type="text" id="itemName" placeholder="F.eks. Blå Jeans" class="w-full border rounded-md"> </div>
-                 <div> <label for="itemQuantity" class="block text-sm mb-1">Antal:</label> <input type="number" id="itemQuantity" value="1" min="1" step="1" class="w-full border rounded-md"> </div>
-                 <div class="md:col-span-2 xl:col-span-1"> <label for="itemCategory" class="block text-sm mb-1">Kategori (f.eks. Tøj > Bukser):</label> <div class="flex"> <input type="text" id="itemCategory" list="categorySuggestions" placeholder="Hovedkategori > Underkategori" class="flex-grow border border-r-0 rounded-l-md"> <datalist id="categorySuggestions"></datalist> <button id="addCategoryBtn" title="Tilføj kategori/sti til forslagsliste" class="p-2 border border-l-0 rounded-r-md"> <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /> </svg></button> </div> </div>
-                 <div class="md:col-span-2 xl:col-span-1">
-                      <label for="itemImage" class="block text-sm mb-1">Billede:</label>
-                      <input type="file" id="itemImage" accept="image/*" class="w-full text-sm">
-                      <div id="editImagePreviewContainer" class="hidden mt-2 flex items-center gap-2">
-                          <img id="editImagePreview" src="" alt="Nuværende billede" class="h-10 w-10 object-cover rounded">
-                          <button type="button" id="removeImageBtn" class="text-xs text-red-600 hover:underline">Fjern billede</button>
-                      </div>
-                 </div>
+                <div> <label for="itemName" class="block text-sm mb-1">Navn på ting:</label> <input type="text" id="itemName" placeholder="F.eks. Blå Jeans" class="w-full border rounded-md"> </div>
+                <div> <label for="itemQuantity" class="block text-sm mb-1">Antal:</label> <input type="number" id="itemQuantity" value="1" min="1" step="1" class="w-full border rounded-md"> </div>
+                <div> <label for="itemCategory" class="block text-sm mb-1">Kategori (f.eks. Tøj > Bukser):</label> <div class="flex"> <input type="text" id="itemCategory" list="categorySuggestions" placeholder="Hovedkategori > Underkategori" class="flex-grow border border-r-0 rounded-l-md"> <datalist id="categorySuggestions"></datalist> <button id="addCategoryBtn" title="Tilføj kategori/sti til forslagsliste" class="p-2 border border-l-0 rounded-r-md"> <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /> </svg></button> </div> </div>
+                <div>
+                     <label for="itemImage" class="block text-sm mb-1">Billede:</label>
+                     <input type="file" id="itemImage" accept="image/*" class="w-full text-sm">
+                     <div id="editImagePreviewContainer" class="hidden mt-2 flex items-center gap-2">
+                         <img id="editImagePreview" src="" alt="Nuværende billede" class="h-10 w-10 object-cover rounded">
+                         <button type="button" id="removeImageBtn" class="text-xs text-red-600 hover:underline">Fjern billede</button>
+                     </div>
+                </div>
             </div>
             <div class="mt-4 flex items-center">
                   <button id="addItemBtn" class="font-semibold py-2 px-6 rounded-md flex items-center justify-center gap-2"> <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /> </svg> Tilføj til kuffert </button>
@@ -206,6 +204,72 @@
         // === Funktion: Generer Eksport Tekst ===
         function generateExportText() { let exportString = "Cozy Kuffert Pakkeliste:\n=========================\n\n"; const indent = "  "; function traverse(node, currentIndent) { const categoryKeys = Object.keys(node).filter(k => k !== 'items' && k !== 'subcategories').sort(); categoryKeys.forEach(key => { const category = node[key]; exportString += `${currentIndent}📁 ${key}:\n`; if (category.items && category.items.length > 0) { category.items.forEach(item => { const packedMark = item.packed ? '[x]' : '[ ]'; const quantityPrefix = (item.quantity && item.quantity > 1) ? `${item.quantity}x ` : ''; exportString += `${currentIndent}${indent}${packedMark} ${quantityPrefix}${item.name}\n`; }); } if (category.subcategories) { traverse(category.subcategories, currentIndent + indent); } }); } traverse(appState.itemsTree, ''); return exportString; }
 
+        // === Funktion: Generer Print HTML (Opdateret) ===
+        function generatePrintHtml() {
+            let printHtml = `
+                <!DOCTYPE html>
+                <html lang="da">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Cozy Kuffert - Pakkeliste</title>
+                    <style>
+                        body { font-family: sans-serif; line-height: 1.4; margin: 20px; }
+                        h1 { text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
+                        .category { margin-bottom: 15px; }
+                        .category-title { font-weight: bold; font-size: 1.1em; margin-bottom: 5px; }
+                        ul { list-style: none; padding-left: 20px; margin: 0; }
+                        li { margin-bottom: 5px; display: flex; align-items: center; min-height: 45px; /* Sørg for lidt højde */ }
+                        /* Rettet styling for packed-status */
+                        .packed-status { font-family: monospace; margin-right: 8px; display: inline-block; width: 1.5em; text-align: center; white-space: nowrap; /* Undgå linjeskift */ }
+                        /* Rettet styling for billede */
+                        .item-image-print { width: 40px; height: 40px; object-fit: cover; margin-right: 8px; vertical-align: middle; border-radius: 3px; border: 1px solid #eee; }
+                        .item-image-placeholder-print { display: inline-block; width: 40px; height: 40px; margin-right: 8px; vertical-align: middle; border: 1px dashed #eee; border-radius: 3px; line-height: 40px; text-align: center; color: #ccc; font-size: 0.8em; } /* Placeholder hvis intet billede */
+                        .quantity { font-weight: bold; margin-right: 5px; }
+                        .item-details { display: flex; flex-direction: column; /* Sæt navn på linje for sig */ justify-content: center; }
+                        .item-name-print { display: block; /* Sørg for at navn er på sin egen linje */ }
+                        .packed .item-name-print { text-decoration: line-through; color: #666; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Cozy Kuffert - Pakkeliste</h1>
+            `;
+            const indentSpaces = "&nbsp;&nbsp;&nbsp;&nbsp;";
+
+            function traverse(node, level) {
+                const categoryKeys = Object.keys(node).filter(k => k !== 'items' && k !== 'subcategories').sort();
+                categoryKeys.forEach(key => {
+                    const category = node[key];
+                    printHtml += `<div class="category" style="margin-left: ${level * 20}px;">`;
+                    printHtml += `<div class="category-title">${key}</div>`;
+                    printHtml += `<ul>`;
+                    if (category.items && category.items.length > 0) {
+                        category.items.forEach(item => {
+                            const packedMark = item.packed ? '[x]' : '[ ]';
+                            const quantityPrefix = (item.quantity && item.quantity > 1) ? `<span class="quantity">${item.quantity}x</span>` : '';
+                            // Vis billede hvis det findes, ellers en tom boks
+                            const imageTag = item.image
+                                ? `<img src="${item.image}" alt="" class="item-image-print">`
+                                : '<span class="item-image-placeholder-print"></span>';
+                            printHtml += `<li class="${item.packed ? 'packed' : ''}">
+                                            <span class="packed-status">${packedMark}</span>
+                                            ${imageTag}
+                                            <div class="item-details">
+                                                ${quantityPrefix}
+                                                <span class="item-name-print">${item.name}</span>
+                                            </div>
+                                         </li>`;
+                        });
+                    }
+                    printHtml += `</ul>`;
+                    if (category.subcategories) { traverse(category.subcategories, level + 1); }
+                    printHtml += `</div>`;
+                });
+            }
+            traverse(appState.itemsTree, 0);
+            printHtml += `</body></html>`;
+            return printHtml;
+        }
+
         // === Funktion: Håndter Item Drop (Træk-og-slip) ===
         function handleItemDrop(event) { const movedItemElement = event.item; const targetListElement = event.to; const sourceListElement = event.from; const oldIndex = event.oldIndex; const newIndex = event.newIndex; const itemId = movedItemElement.dataset.itemId; const sourcePathString = sourceListElement.dataset.categoryPath; const targetPathString = targetListElement.dataset.categoryPath; if (!itemId || !sourcePathString || !targetPathString) { console.error("Fejl ved drop: Mangler data-attributter på item eller lister."); showError("Der skete en fejl under flytningen (manglende data)."); displayItems(); return; } const sourcePath = sourcePathString.split(','); const targetPath = targetPathString.split(','); console.log(`Flytter item ${itemId} fra [${sourcePath.join(' > ')}] index ${oldIndex} til [${targetPath.join(' > ')}] index ${newIndex}`); let movedItemData = null; const { node: sourceNode } = findNodeAndParent(appState.itemsTree, sourcePath); if (!sourceNode || !sourceNode.items) { console.error("Kunne ikke finde source node eller dens items:", sourcePath, sourceNode); showError("Fejl under flytning (kunne ikke finde kildekategori)."); displayItems(); return; } const itemIndexInSource = sourceNode.items.findIndex(i => String(i.id) === String(itemId)); if (itemIndexInSource > -1) { movedItemData = sourceNode.items.splice(itemIndexInSource, 1)[0]; } else { console.error(`Kunne ikke finde item med ID ${itemId} i source node:`, sourceNode.items); showError("Fejl under flytning (kunne ikke finde element i kildedata)."); displayItems(); return; } const { node: targetNode } = findNodeAndParent(appState.itemsTree, targetPath); if (!targetNode || !targetNode.items) { console.error("Kunne ikke finde target node eller dens items:", targetPath, targetNode); showError("Fejl under flytning (kunne ikke finde målkategori)."); sourceNode.items.splice(itemIndexInSource, 0, movedItemData); displayItems(); return; } targetNode.items.splice(newIndex, 0, movedItemData); savePackedItems(); updateCategorySuggestions(); displayItems(); console.log("Item flyttet, state gemt, og listen gen-tegnet."); }
 
@@ -221,7 +285,20 @@
         removeImageBtn.addEventListener('click', () => { shouldRemoveImage = true; editImagePreviewContainer.classList.add('hidden'); itemImageInput.value = ''; });
         exportBtn.addEventListener('click', () => { const exportText = generateExportText(); exportTextArea.value = exportText; showExportModal(); });
         copyExportBtn.addEventListener('click', () => { navigator.clipboard.writeText(exportTextArea.value).then(() => { const originalText = copyExportBtn.textContent; copyExportBtn.textContent = 'Kopieret!'; setTimeout(() => { copyExportBtn.textContent = originalText; }, 1500); }).catch(err => { console.error('Fejl ved kopiering: ', err); showAlertModal('Kunne ikke kopiere teksten automatisk. Prøv manuelt.'); }); });
-        printPageBtn.addEventListener('click', () => { window.print(); });
+        // Opdateret Print Knap Listener
+        printPageBtn.addEventListener('click', () => {
+            const printHtml = generatePrintHtml();
+            const printWindow = window.open('', '_blank');
+            if(printWindow) {
+                printWindow.document.write(printHtml);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => { printWindow.print(); }, 500);
+                hideExportModal();
+            } else {
+                showAlertModal('Kunne ikke åbne print-vindue. Tillad pop-ups for denne side.');
+            }
+        });
         closeExportBtn.addEventListener('click', hideExportModal);
         exportModal.addEventListener('click', (e) => { if (e.target === exportModal) hideExportModal(); });
 
