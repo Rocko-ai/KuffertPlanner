@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cozy Kuffert</title>
-    <link rel="apple-touch-icon" href="briefcase.jpeg">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" href="briefcase.jpeg">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,10 +13,10 @@
 
         /* --- Generel Styling & Tema --- */
         body { font-family: 'Inter', sans-serif; background-color: #fff0f5; }
-        .main-container { background-color: #ffffff; border: 1px solid #fbcfe8; box-shadow: 0 4px 15px rgba(219, 112, 147, 0.1); }
+        .main-container { background-color: #ffffff; border: 1px solid #fbcfe8; box-shadow: 0 4px 15px rgba(219, 112, 147, 0.1); position: relative; /* Nødvendig for menu positionering */ }
         .main-title { color: #be185d; text-shadow: 1px 1px 2px rgba(219, 112, 147, 0.1); }
 
-        /* --- Tilføj/Rediger Form Styling med Transition --- */
+        /* --- Tilføj/Rediger Form Styling --- */
         #addEditFormContainer { background-color: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 0.5rem; padding: 1rem; margin-bottom: 2rem; overflow: hidden; opacity: 0; transform: scale(0); transform-origin: top right; height: auto; max-height: 0; transition: transform 0.3s ease-out, opacity 0.3s ease-out, max-height 0.3s cubic-bezier(0, 1, 0, 1); visibility: hidden; transition: transform 0.3s ease-out, opacity 0.3s ease-out, max-height 0.3s cubic-bezier(0, 1, 0, 1), visibility 0s linear 0.3s; }
         #addEditFormContainer.active { opacity: 1; transform: scale(1); max-height: 1000px; visibility: visible; transition: transform 0.3s ease-out, opacity 0.3s ease-out, max-height 0.3s cubic-bezier(1, 0, 1, 0), visibility 0s linear 0s; }
         .add-item-title { color: #9d174d; }
@@ -33,17 +32,19 @@
         #addCategoryBtn svg { color: #be185d; }
         #cancelEditBtn { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; margin-left: 0.5rem; }
         #cancelEditBtn:hover { background-color: #e5e7eb; }
-        #exportBtn { background-color: #fce7f3; border-color: #f9a8d4; color: #be185d; }
-        #exportBtn:hover { background-color: #fbcfe8; }
-        #exportBtn svg { margin-right: 0.5rem; }
-        input[type=number]::-webkit-outer-spin-button,
-        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        input[type=number] { -moz-appearance: textfield; }
-        #editImagePreview { height: 2.5rem; width: 2.5rem; object-fit: cover; border-radius: 0.25rem; border: 1px solid #fce7f3; }
-        #removeImageBtn { font-size: 0.75rem; color: #be185d; text-decoration: underline; }
         #toggleFormBtn { background-image: linear-gradient(to right, #f9a8d4 0%, #f472b6 50%, #ec4899 100%); color: white; border-radius: 9999px; width: 3rem; height: 3rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); transition: all 0.3s ease; margin-bottom: 1rem; }
         #toggleFormBtn:hover { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); transform: translateY(-2px); }
         #toggleFormBtn svg { width: 1.5rem; height: 1.5rem; }
+        #editImagePreview { height: 2.5rem; width: 2.5rem; object-fit: cover; border-radius: 0.25rem; border: 1px solid #fce7f3; }
+        #removeImageBtn { font-size: 0.75rem; color: #be185d; text-decoration: underline; }
+
+        /* --- Burger Menu Styling --- */
+        #mainMenuBtn { background-color: #fce7f3; border: 1px solid #f9a8d4; color: #be185d; padding: 0.5rem; border-radius: 0.375rem; }
+        #mainMenuBtn:hover { background-color: #fbcfe8; }
+        #mainMenuDropdown { position: absolute; top: 100%; right: 0; background-color: white; border-radius: 0.375rem; border: 1px solid #fbcfe8; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); z-index: 50; min-width: 200px; padding: 0.5rem 0; margin-top: 0.25rem; }
+        .main-menu-item { display: flex; align-items: center; gap: 0.75rem; /* Mellemrum ikon/tekst */ padding: 0.5rem 1rem; font-size: 0.875rem; color: #831843; background: none; border: none; cursor: pointer; width: 100%; text-align: left; }
+        .main-menu-item svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+        .main-menu-item:hover { background-color: #fdf2f8; }
 
 
         /* --- Kuffert Indhold & Kategori Styling --- */
@@ -55,7 +56,7 @@
         .category-header:hover { background-image: linear-gradient(to bottom, #fdf2f8, #fce7f3); }
         .category-header h3 { color: #be185d; }
         .category-header .toggle-icon { color: #f472b6; transition: transform 0.3s ease; }
-        .category-packed-weight { font-size: 0.75rem; color: #888; margin-left: 0.5rem; white-space: nowrap; } /* NYT: Styling for kategori vægt */
+        .category-packed-weight { font-size: 0.75rem; color: #888; margin-left: 0.5rem; white-space: nowrap; }
         .delete-category-btn { color: #f9a8d4; background-color: transparent; transition: all 0.2s ease; }
         .delete-category-btn:hover { color: #be185d; background-color: #fce7f3; transform: scale(1.1); }
         .category-content { background-color: #fffafa; min-height: 20px; }
@@ -119,13 +120,35 @@
 <body class="p-4 md:p-8">
 
     <div class="main-container max-w-4xl mx-auto p-6 rounded-lg">
-        <div id="headerContainer" class="flex justify-between items-center mb-6">
-             <h1 class="main-title text-3xl font-bold text-center flex-grow">Cozy Kuffert</h1>
-             <button id="exportBtn" class="font-semibold py-2 px-4 rounded-md flex items-center justify-center gap-1 text-sm border">
-                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"> <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0M12 12.75h.008v.008H12v-.008Z" /> </svg>
-                 Eksport/Print
+        <div id="headerContainer" class="flex justify-between items-center mb-6 relative"> <h1 class="main-title text-3xl font-bold text-center flex-grow">Cozy Kuffert</h1>
+             <button id="mainMenuBtn" title="Menu">
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                 </svg>
              </button>
+             <div id="mainMenuDropdown" class="hidden">
+                 <button id="exportPrintMenuItem" class="main-menu-item">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                         <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0M12 12.75h.008v.008H12v-.008Z" />
+                     </svg>
+                     Eksportér / Print...
+                 </button>
+                 <button id="saveToFileMenuItem" class="main-menu-item">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                      </svg>
+                     Gem til Fil...
+                 </button>
+                 <button id="loadFromFileMenuItem" class="main-menu-item">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                     </svg>
+                     Hent fra Fil...
+                 </button>
+             </div>
         </div>
+
+        <input type="file" id="loadFileInput" accept=".json" class="hidden">
 
         <div class="flex justify-end mb-4">
             <button id="toggleFormBtn" title="Tilføj ny ting">
@@ -182,10 +205,20 @@
         // === DOM Elementer ===
         const itemNameInput = document.getElementById('itemName'); const itemQuantityInput = document.getElementById('itemQuantity'); const itemCategoryInput = document.getElementById('itemCategory'); const itemImageInput = document.getElementById('itemImage'); const itemWeightInput = document.getElementById('itemWeight');
         const addItemBtn = document.getElementById('addItemBtn'); const addCategoryBtn = document.getElementById('addCategoryBtn'); const suitcaseContent = document.getElementById('suitcaseContent'); const categoryTreeContainer = document.getElementById('categoryTreeContainer'); const categorySuggestions = document.getElementById('categorySuggestions'); const errorMessage = document.getElementById('errorMessage'); const emptyMessage = document.getElementById('emptyMessage'); const confirmationModal = document.getElementById('confirmationModal'); const confirmationModalTitle = document.getElementById('confirmationModalTitle'); const confirmationModalMessage = document.getElementById('confirmationModalMessage'); const confirmCancelBtn = document.getElementById('confirmCancelBtn'); const confirmOkBtn = document.getElementById('confirmOkBtn'); const alertModal = document.getElementById('alertModal'); const alertModalTitle = document.getElementById('alertModalTitle'); const alertModalMessage = document.getElementById('alertModalMessage'); const alertOkBtn = document.getElementById('alertOkBtn');
-        const cancelEditBtn = document.getElementById('cancelEditBtn'); const exportBtn = document.getElementById('exportBtn'); const exportModal = document.getElementById('exportModal'); const exportTextArea = document.getElementById('exportTextArea'); const copyExportBtn = document.getElementById('copyExportBtn'); const printPageBtn = document.getElementById('printPageBtn'); const closeExportBtn = document.getElementById('closeExportBtn');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        // const exportBtn = document.getElementById('exportBtn'); // Fjernet
+        const exportModal = document.getElementById('exportModal'); const exportTextArea = document.getElementById('exportTextArea'); const copyExportBtn = document.getElementById('copyExportBtn'); const printPageBtn = document.getElementById('printPageBtn'); const closeExportBtn = document.getElementById('closeExportBtn');
         const editImagePreviewContainer = document.getElementById('editImagePreviewContainer'); const editImagePreview = document.getElementById('editImagePreview'); const removeImageBtn = document.getElementById('removeImageBtn');
         const toggleFormBtn = document.getElementById('toggleFormBtn'); const addEditFormContainer = document.getElementById('addEditFormContainer');
-        const totalPackedWeightDisplay = document.getElementById('totalPackedWeightDisplay'); // NYT: Vægt display
+        const totalPackedWeightDisplay = document.getElementById('totalPackedWeightDisplay');
+        // NYE Menu elementer
+        const mainMenuBtn = document.getElementById('mainMenuBtn');
+        const mainMenuDropdown = document.getElementById('mainMenuDropdown');
+        const exportPrintMenuItem = document.getElementById('exportPrintMenuItem');
+        const saveToFileMenuItem = document.getElementById('saveToFileMenuItem');
+        const loadFromFileMenuItem = document.getElementById('loadFromFileMenuItem');
+        const loadFileInput = document.getElementById('loadFileInput');
+
 
         // === App State ===
         let appState = { itemsTree: {} };
@@ -213,67 +246,15 @@
         function hideConfirmationModal() { confirmationModal.classList.remove('active'); confirmCallback = null; cancelCallback = null; }
         function showAlertModal(m, t = "Besked") { alertModalTitle.textContent = t; alertModalMessage.textContent = m; alertModal.classList.add('active'); }
         function hideAlertModal() { alertModal.classList.remove('active'); }
-        function showExportModal() { exportModal.classList.add('active'); }
+        function showExportModal() { const exportText = generateExportText(); exportTextArea.value = exportText; exportModal.classList.add('active'); } // Opdateret til at generere tekst her
         function hideExportModal() { exportModal.classList.remove('active'); }
 
         // === DOM Opdatering ===
         function updateCategorySuggestions() { /* ... uændret ... */ const suggestions = new Set(); function collectPaths(node, currentPath) { const children = node.subcategories || node; const categoryNames = Object.keys(children); categoryNames.forEach(categoryName => { if (categoryName === 'items' || categoryName === 'subcategories') return; const childNode = children[categoryName]; if (typeof childNode !== 'object' || childNode === null) return; const newPath = currentPath ? [...currentPath, categoryName] : [categoryName]; suggestions.add(newPath.join(` ${CATEGORY_SEPARATOR} `)); if (childNode.subcategories) { collectPaths(childNode, newPath); } }); } collectPaths(appState.itemsTree, null); categorySuggestions.innerHTML = ''; suggestions.forEach(suggestion => { const option = document.createElement('option'); option.value = suggestion; categorySuggestions.appendChild(option); }); }
         function displayItems() { const itemsTree=appState.itemsTree; categoryTreeContainer.innerHTML=''; const topLevelCategories=Object.keys(itemsTree).sort(); if(topLevelCategories.length===0){emptyMessage.classList.remove('hidden');}else{emptyMessage.classList.add('hidden');} topLevelCategories.forEach(categoryName=>{if(typeof itemsTree[categoryName]==='object'&&itemsTree[categoryName]!==null){renderCategoryNode(itemsTree[categoryName],categoryName,categoryTreeContainer,[categoryName]);}}); initItemSortable(); initCategorySortable(); updateTotalWeightDisplay(); }
-
-        // --- Opdateret createCategoryHeaderElement (Vis Kategori Vægt) ---
-        function createCategoryHeaderElement(nodeData, nodeName, currentPath) { // Modtager nu nodeData
-            const categoryHeader = document.createElement('div');
-            categoryHeader.className = 'category-header p-3 flex justify-between items-center border-b';
-
-            // Venstre side: Slet knap + Titel + Kategori Vægt
-            const headerContent = document.createElement('div');
-            headerContent.className = "flex items-center flex-grow min-w-0"; // Sørger for at titel kan blive kort
-
-            const deleteCategoryButton = document.createElement('button');
-            deleteCategoryButton.className = 'delete-category-btn p-1 rounded-full mr-2 flex-shrink-0'; // flex-shrink-0
-            deleteCategoryButton.title = `Slet hele kategorien '${nodeName}' og alt indhold`;
-            deleteCategoryButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>`;
-            deleteCategoryButton.dataset.categoryPath = currentPath.join(',');
-            headerContent.appendChild(deleteCategoryButton);
-
-            const titleElement = document.createElement('h3');
-            titleElement.className = "text-lg font-semibold truncate mr-2"; // Lidt margin til vægt
-            titleElement.textContent = nodeName;
-            headerContent.appendChild(titleElement);
-
-            // Beregn og vis kategoriens pakkede vægt
-            const categoryWeightGrams = calculateTotalPackedWeight(nodeData); // Brug den eksisterende funktion på nodens data
-            if (categoryWeightGrams > 0) {
-                const categoryWeightKg = categoryWeightGrams / 1000;
-                const weightSpan = document.createElement('span');
-                weightSpan.className = 'category-packed-weight flex-shrink-0'; // Styling i CSS
-                weightSpan.textContent = `(${categoryWeightKg.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg)`;
-                headerContent.appendChild(weightSpan);
-            }
-
-            // Højre side: Toggle Ikon
-            const toggleIconContainer = document.createElement('div');
-            toggleIconContainer.className = "flex-shrink-0 ml-2";
-            toggleIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 toggle-icon"> <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /> </svg>`;
-
-            categoryHeader.appendChild(headerContent);
-            categoryHeader.appendChild(toggleIconContainer);
-            return categoryHeader;
-        }
+        function createCategoryHeaderElement(nodeData, nodeName, currentPath) { /* ... uændret ... */ const categoryHeader = document.createElement('div'); categoryHeader.className = 'category-header p-3 flex justify-between items-center border-b'; const headerContent = document.createElement('div'); headerContent.className = "flex items-center flex-grow min-w-0"; const deleteCategoryButton = document.createElement('button'); deleteCategoryButton.className = 'delete-category-btn p-1 rounded-full mr-2 flex-shrink-0'; deleteCategoryButton.title = `Slet hele kategorien '${nodeName}' og alt indhold`; deleteCategoryButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>`; deleteCategoryButton.dataset.categoryPath = currentPath.join(','); headerContent.appendChild(deleteCategoryButton); const titleElement = document.createElement('h3'); titleElement.className = "text-lg font-semibold truncate mr-2"; titleElement.textContent = nodeName; headerContent.appendChild(titleElement); const categoryWeightGrams = calculateTotalPackedWeight(nodeData); if (categoryWeightGrams > 0) { const categoryWeightKg = categoryWeightGrams / 1000; const weightSpan = document.createElement('span'); weightSpan.className = 'category-packed-weight flex-shrink-0'; weightSpan.textContent = `(${categoryWeightKg.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg)`; headerContent.appendChild(weightSpan); } const toggleIconContainer = document.createElement('div'); toggleIconContainer.className = "flex-shrink-0 ml-2"; toggleIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 toggle-icon"> <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /> </svg>`; categoryHeader.appendChild(headerContent); categoryHeader.appendChild(toggleIconContainer); return categoryHeader; }
         function createItemElement(item, currentPath) { /* ... uændret ... */ const itemDiv = document.createElement('div'); itemDiv.dataset.itemId = item.id; itemDiv.className = `item-div item-added flex items-center justify-between p-2 rounded-md border ${item.packed ? 'packed' : ''}`; itemDiv.style.position = 'relative'; const itemInfo = document.createElement('div'); itemInfo.className = 'flex items-center space-x-3 flex-grow min-w-0'; if (item.quantity && item.quantity > 1) { const quantitySpan = document.createElement('span'); quantitySpan.className = 'item-quantity-prefix flex-shrink-0'; quantitySpan.textContent = `${item.quantity}x`; itemInfo.appendChild(quantitySpan); } if (item.image) { const img = document.createElement('img'); img.src = item.image; img.alt = item.name; img.className = 'item-image flex-shrink-0'; itemInfo.appendChild(img); } else { const placeholder = document.createElement('div'); placeholder.className = 'item-image-placeholder item-image flex-shrink-0 flex items-center justify-center rounded-md'; placeholder.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>`; itemInfo.appendChild(placeholder); } const nameAndWeightWrapper = document.createElement('div'); const itemNameElement = document.createElement('span'); itemNameElement.textContent = item.name; itemNameElement.className = `item-name ${item.packed ? 'line-through' : ''}`; nameAndWeightWrapper.appendChild(itemNameElement); if (item.weight !== null && item.weight !== undefined && item.weight > 0) { const weightSpan = document.createElement('span'); weightSpan.className = 'item-weight'; weightSpan.textContent = `(${item.weight}g)`; nameAndWeightWrapper.appendChild(weightSpan); } itemInfo.appendChild(nameAndWeightWrapper); itemDiv.appendChild(itemInfo); const menuButton = document.createElement('button'); menuButton.className = 'item-action-menu-btn flex-shrink-0'; menuButton.title = 'Handlinger'; menuButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" /> </svg>`; menuButton.dataset.itemId = item.id; menuButton.dataset.itemPath = currentPath.join(','); itemDiv.appendChild(menuButton); const actionMenu = document.createElement('div'); actionMenu.className = 'item-action-menu hidden'; actionMenu.dataset.itemId = item.id; actionMenu.dataset.itemPath = currentPath.join(','); actionMenu.innerHTML = `<button class="action-pack w-full text-left" data-item-id="${item.id}" data-item-path="${currentPath.join(',')}">${item.packed ? 'Pak ud' : 'Pak'}</button><button class="action-edit w-full text-left" data-item-id="${item.id}" data-item-path="${currentPath.join(',')}">Rediger</button><button class="action-delete w-full text-left" data-item-id="${item.id}" data-item-path="${currentPath.join(',')}" data-item-name="${item.name}">Slet</button>`; itemDiv.appendChild(actionMenu); return itemDiv; }
-
-        // --- Opdateret renderCategoryNode (Sender nodeData til header func) ---
-        function renderCategoryNode(nD,nN,pE,cP){
-             if(!nD)return;
-             const cD=document.createElement('div');
-             cD.dataset.categoryPath = cP.join(',');
-             cD.className='category-node border rounded-lg overflow-hidden mb-3';
-             const cH=createCategoryHeaderElement(nD, nN, cP); // Sender nu nD (node data) med
-             const cCo=document.createElement('div');
-             cCo.dataset.categoryPath = cP.join(',');
-             cCo.className='category-content p-4 space-y-3';
-             const cSK=`category_${cP.join('_')}_collapsed`;const iC=localStorage.getItem(cSK)==='true';const tI=cH.querySelector('.toggle-icon');if(iC){cCo.classList.add('hidden');if(tI)tI.style.transform='rotate(-90deg)';}else{if(tI)tI.style.transform='rotate(0deg)';}cH.addEventListener('click',(e)=>{if(e.target.closest('.delete-category-btn'))return;const cHi=cCo.classList.toggle('hidden');localStorage.setItem(cSK,cHi);if(tI)tI.style.transform=cHi?'rotate(-90deg)':'rotate(0deg)';});cD.appendChild(cH);cD.appendChild(cCo); if(nD.items&&nD.items.length>0){nD.items.forEach(item=>{const iE=createItemElement(item,cP);cCo.appendChild(iE);});} const sC=document.createElement('div'); sC.className='subcategory-container mt-4 space-y-3'; sC.dataset.categoryPath = cP.join(','); if(nD.subcategories&&Object.keys(nD.subcategories).length>0){ const sCN=Object.keys(nD.subcategories).sort(); sCN.forEach(sCN=>{const nP=[...cP,sCN];renderCategoryNode(nD.subcategories[sCN],sCN,sC,nP);}); } cCo.appendChild(sC); pE.appendChild(cD);
-         }
+        function renderCategoryNode(nD,nN,pE,cP){ /* ... uændret ... */ if(!nD)return; const cD=document.createElement('div'); cD.dataset.categoryPath = cP.join(','); cD.className='category-node border rounded-lg overflow-hidden mb-3'; const cH=createCategoryHeaderElement(nD, nN, cP); const cCo=document.createElement('div'); cCo.dataset.categoryPath = cP.join(','); cCo.className='category-content p-4 space-y-3'; const cSK=`category_${cP.join('_')}_collapsed`;const iC=localStorage.getItem(cSK)==='true';const tI=cH.querySelector('.toggle-icon');if(iC){cCo.classList.add('hidden');if(tI)tI.style.transform='rotate(-90deg)';}else{if(tI)tI.style.transform='rotate(0deg)';}cH.addEventListener('click',(e)=>{if(e.target.closest('.delete-category-btn'))return;const cHi=cCo.classList.toggle('hidden');localStorage.setItem(cSK,cHi);if(tI)tI.style.transform=cHi?'rotate(-90deg)':'rotate(0deg)';});cD.appendChild(cH);cD.appendChild(cCo); if(nD.items&&nD.items.length>0){nD.items.forEach(item=>{const iE=createItemElement(item,cP);cCo.appendChild(iE);});} const sC=document.createElement('div'); sC.className='subcategory-container mt-4 space-y-3'; sC.dataset.categoryPath = cP.join(','); if(nD.subcategories&&Object.keys(nD.subcategories).length>0){ const sCN=Object.keys(nD.subcategories).sort(); sCN.forEach(sCN=>{const nP=[...cP,sCN];renderCategoryNode(nD.subcategories[sCN],sCN,sC,nP);}); } cCo.appendChild(sC); pE.appendChild(cD); }
 
         // === Kernefunktionalitet: Tilføjelse & Redigering af Ting ===
         function handleImageUpload(imageFile, onImageReady, onError) { /* ... uændret ... */ if (!imageFile.type.startsWith('image/')) { onError('Ugyldig filtype. Vælg venligst et billede.'); return; } const maxSizeMB = 2; if (imageFile.size > maxSizeMB * 1024 * 1024) { onError(`Billedfil er for stor (maks ${maxSizeMB} MB).`); return; } const reader = new FileReader(); reader.onloadend = () => { onImageReady(reader.result); }; reader.onerror = () => { console.error("FileReader error:", reader.error); onError('Ukendt fejl ved indlæsning af billede.'); }; reader.readAsDataURL(imageFile); }
@@ -284,9 +265,9 @@
         function addCategoryToList(){ /* ... uændret ... */ hideError();const cPS=itemCategoryInput.value.trim();if(cPS){const cP=parseCategoryPath(cPS);if(cP.length===0){showError('Ugyldigt kategori format.');return;}const fP=cP.join(` ${CATEGORY_SEPARATOR} `);const eO=Array.from(categorySuggestions.options).map(o=>o.value);if(!eO.includes(fP)){const o=document.createElement('option');o.value=fP;categorySuggestions.appendChild(o);showAlertModal(`Stien "${fP}" er tilføjet til forslagslisten.`);itemCategoryInput.value='';}else{showAlertModal(`Stien "${fP}" findes allerede på forslagslisten.`);}}else{showError('Skriv en kategori/sti i kategorifeltet først for at tilføje den til listen.');itemCategoryInput.focus();}}
 
         // === Event Handlers for Sletning, Pakket Status & Redigering ===
-        function handleItemDeleteClick(deleteButton) { /* ... uændret ... */ const itemId = deleteButton.dataset.itemId; const itemPathString = deleteButton.dataset.itemPath; const itemName = deleteButton.dataset.itemName; if (itemId && itemPathString && itemName) { const itemPath = itemPathString.split(','); showConfirmationModal( `Er du sikker på, du vil slette "${itemName}" fra kategorien "${itemPath.join(` ${CATEGORY_SEPARATOR} `)}"?`, () => { const { parent: cPN, node: cN, key: cK } = findNodeAndParent(appState.itemsTree, itemPath); if (!cN) { showError(`Kunne ikke finde kategori '${itemPath.join(' > ')}' under sletning.`); return; } if (cN.items) { const iI = cN.items.findIndex(i => String(i.id) === String(itemId)); if (iI > -1) { cN.items.splice(iI, 1); const sK = cN.subcategories ? Object.keys(cN.subcategories) : []; if (cN.items.length === 0 && sK.length === 0 && cPN && cK) { if (cPN === appState.itemsTree) { delete cPN[cK]; } else if (cPN.subcategories) { delete cPN.subcategories[cK]; } localStorage.removeItem(`category_${itemPath.join('_')}_collapsed`); } savePackedItems(); displayItems(); updateCategorySuggestions(); updateTotalWeightDisplay(); /* Opdater vægt */ } else { showError(`Kunne ikke finde tingen med ID ${itemId} i kategorien.`); } } else { showError(`Kategorien '${itemPath.join(' > ')}' mangler en item-liste.`); } }); } else { console.error("Mangler data attr på item slet:", deleteButton); showError("Kunne ikke identificere elementet der skal slettes (manglende data)."); } }
-        function handleCategoryDeleteClick(deleteButton) { /* ... uændret ... */ const categoryPathString = deleteButton.dataset.categoryPath; if (categoryPathString) { const categoryPath = categoryPathString.split(','); const categoryName = categoryPath[categoryPath.length - 1]; showConfirmationModal( `Er du sikker på, du vil slette kat. "${categoryName}" (${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}) og alt indhold? Kan ikke fortrydes.`, () => { const treeBeforeDelete = JSON.parse(JSON.stringify(appState.itemsTree)); const { parent: parentNode, node: nodeToDelete, key: nodeKey } = findNodeAndParent(appState.itemsTree, categoryPath); if (!nodeToDelete) { showError(`Kunne ikke finde kategori "${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}" til sletning.`); return; } if (parentNode === appState.itemsTree) { delete parentNode[nodeKey]; } else if (parentNode && parentNode.subcategories) { delete parentNode.subcategories[nodeKey]; } else { showError(`Kunne ikke finde forælder til kategori "${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}" under sletning.`); return; } removeCollapseStatesRecursive(treeBeforeDelete, categoryPath); savePackedItems(); displayItems(); updateCategorySuggestions(); updateTotalWeightDisplay(); /* Opdater vægt */ }); } else { console.error("Mangler data-cat-path:", deleteCategoryButton); showError("Kunne ikke identificere kategorien der skal slettes (manglende data)."); } }
-        function handlePackedToggleClick(toggleElement) { /* ... uændret ... */ const itemId = toggleElement.dataset.itemId; const itemPathString = toggleElement.dataset.itemPath; if (itemId && itemPathString) { const itemPath = itemPathString.split(','); const { node: categoryNode } = findNodeAndParent(appState.itemsTree, itemPath); if (categoryNode && categoryNode.items) { const item = categoryNode.items.find(i => String(i.id) === String(itemId)); if (item) { item.packed = !item.packed; savePackedItems(); displayItems(); updateTotalWeightDisplay(); /* Opdater vægt */ } else { showError(`Kunne ikke finde tingen med ID ${itemId} for at opdatere pakket-status.`); } } else { showError(`Kunne ikke finde kategori '${itemPath.join(' > ')}' for at opdatere pakket-status.`); } } else { console.error("Mangler data-attributter på packed toggle element:", toggleElement); showError("Kunne ikke identificere elementet for at ændre pakket-status."); } }
+        function handleItemDeleteClick(deleteButton) { /* ... uændret ... */ const itemId = deleteButton.dataset.itemId; const itemPathString = deleteButton.dataset.itemPath; const itemName = deleteButton.dataset.itemName; if (itemId && itemPathString && itemName) { const itemPath = itemPathString.split(','); showConfirmationModal( `Er du sikker på, du vil slette "${itemName}" fra kategorien "${itemPath.join(` ${CATEGORY_SEPARATOR} `)}"?`, () => { const { parent: cPN, node: cN, key: cK } = findNodeAndParent(appState.itemsTree, itemPath); if (!cN) { showError(`Kunne ikke finde kategori '${itemPath.join(' > ')}' under sletning.`); return; } if (cN.items) { const iI = cN.items.findIndex(i => String(i.id) === String(itemId)); if (iI > -1) { cN.items.splice(iI, 1); const sK = cN.subcategories ? Object.keys(cN.subcategories) : []; if (cN.items.length === 0 && sK.length === 0 && cPN && cK) { if (cPN === appState.itemsTree) { delete cPN[cK]; } else if (cPN.subcategories) { delete cPN.subcategories[cK]; } localStorage.removeItem(`category_${itemPath.join('_')}_collapsed`); } savePackedItems(); displayItems(); updateCategorySuggestions(); updateTotalWeightDisplay(); } else { showError(`Kunne ikke finde tingen med ID ${itemId} i kategorien.`); } } else { showError(`Kategorien '${itemPath.join(' > ')}' mangler en item-liste.`); } }); } else { console.error("Mangler data attr på item slet:", deleteButton); showError("Kunne ikke identificere elementet der skal slettes (manglende data)."); } }
+        function handleCategoryDeleteClick(deleteButton) { /* ... uændret ... */ const categoryPathString = deleteButton.dataset.categoryPath; if (categoryPathString) { const categoryPath = categoryPathString.split(','); const categoryName = categoryPath[categoryPath.length - 1]; showConfirmationModal( `Er du sikker på, du vil slette kat. "${categoryName}" (${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}) og alt indhold? Kan ikke fortrydes.`, () => { const treeBeforeDelete = JSON.parse(JSON.stringify(appState.itemsTree)); const { parent: parentNode, node: nodeToDelete, key: nodeKey } = findNodeAndParent(appState.itemsTree, categoryPath); if (!nodeToDelete) { showError(`Kunne ikke finde kategori "${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}" til sletning.`); return; } if (parentNode === appState.itemsTree) { delete parentNode[nodeKey]; } else if (parentNode && parentNode.subcategories) { delete parentNode.subcategories[nodeKey]; } else { showError(`Kunne ikke finde forælder til kategori "${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}" under sletning.`); return; } removeCollapseStatesRecursive(treeBeforeDelete, categoryPath); savePackedItems(); displayItems(); updateCategorySuggestions(); updateTotalWeightDisplay(); }); } else { console.error("Mangler data-cat-path:", deleteCategoryButton); showError("Kunne ikke identificere kategorien der skal slettes (manglende data)."); } }
+        function handlePackedToggleClick(toggleElement) { /* ... uændret ... */ const itemId = toggleElement.dataset.itemId; const itemPathString = toggleElement.dataset.itemPath; if (itemId && itemPathString) { const itemPath = itemPathString.split(','); const { node: categoryNode } = findNodeAndParent(appState.itemsTree, itemPath); if (categoryNode && categoryNode.items) { const item = categoryNode.items.find(i => String(i.id) === String(itemId)); if (item) { item.packed = !item.packed; savePackedItems(); displayItems(); updateTotalWeightDisplay(); } else { showError(`Kunne ikke finde tingen med ID ${itemId} for at opdatere pakket-status.`); } } else { showError(`Kunne ikke finde kategori '${itemPath.join(' > ')}' for at opdatere pakket-status.`); } } else { console.error("Mangler data-attributter på packed toggle element:", toggleElement); showError("Kunne ikke identificere elementet for at ændre pakket-status."); } }
 
         // === Central Event Handler for Træ-Klik (inkl. Action Menu) ===
         function closeAllActionMenus(exceptMenu = null) { document.querySelectorAll('.item-action-menu').forEach(menu => { if (menu !== exceptMenu && !menu.classList.contains('hidden')) { menu.classList.add('hidden'); } }); }
@@ -313,60 +294,11 @@
          // === Funktion: Flyt Kategori i Data ===
          function moveCategoryInData(movedCategoryPath, targetParentPath) { /* ... uændret ... */ if (!movedCategoryPath || movedCategoryPath.length === 0 || targetParentPath === null) { console.error("moveCategoryInData: Ugyldige stier modtaget."); return false; } const targetPathString = targetParentPath.join(','); const movedPathString = movedCategoryPath.join(','); if (targetParentPath.length > 0 && targetPathString.startsWith(movedPathString)) { console.error("moveCategoryInData: Forsøg på at flytte en kategori ind i sig selv eller en underkategori."); return false; } const movedKey = movedCategoryPath[movedCategoryPath.length - 1]; const sourcePath = movedCategoryPath.slice(0, -1); let sourceParentNode; if (sourcePath.length === 0) { sourceParentNode = appState.itemsTree; } else { const { node } = findNodeAndParent(appState.itemsTree, sourcePath); sourceParentNode = node; } if (!sourceParentNode) { console.error("moveCategoryInData: Kunne ikke finde kilde-forælder.", sourcePath); return false; } let targetParentNode; if (targetParentPath.length === 0) { targetParentNode = appState.itemsTree; } else { const { node } = findNodeAndParent(appState.itemsTree, targetParentPath); targetParentNode = node; } if (!targetParentNode) { console.error("moveCategoryInData: Kunne ikke finde mål-forælder.", targetParentPath); return false; } let movedNodeData; if (sourcePath.length === 0) { if (!sourceParentNode[movedKey]) { console.error(`Kilde nøgle ${movedKey} findes ikke i roden.`); return false; } movedNodeData = sourceParentNode[movedKey]; delete sourceParentNode[movedKey]; } else { if (!sourceParentNode.subcategories || !sourceParentNode.subcategories[movedKey]) { console.error(`Kilde nøgle ${movedKey} findes ikke i subcategories for ${sourcePath.join('>')}.`); return false; } movedNodeData = sourceParentNode.subcategories[movedKey]; delete sourceParentNode.subcategories[movedKey]; } if (targetParentPath.length === 0) { targetParentNode[movedKey] = movedNodeData; } else { if (!targetParentNode.subcategories) { targetParentNode.subcategories = {}; } targetParentNode.subcategories[movedKey] = movedNodeData; } console.log(`Moved category '${movedKey}' data successfully.`); return true; }
 
-         // === NY Funktion: Beregn Total Vægt ===
-         function calculateTotalPackedWeight(node) {
-            let totalWeight = 0;
-            // Gennemgå items i den nuværende node
-            if (node.items && Array.isArray(node.items)) {
-                node.items.forEach(item => {
-                    const isPacked = item.packed === true;
-                    const weight = typeof item.weight === 'number' && item.weight > 0 ? item.weight : 0;
-                    const quantity = typeof item.quantity === 'number' && item.quantity >= 1 ? item.quantity : 1;
-                    if (isPacked && weight > 0) { totalWeight += weight * quantity; }
-                });
-            }
-            // Gennemgå underkategorier rekursivt
-            if (node.subcategories) {
-                Object.keys(node.subcategories).forEach(key => {
-                    // VIGTIGT: Kald rekursivt på underkategoriens node
-                    totalWeight += calculateTotalPackedWeight(node.subcategories[key]);
-                });
-            }
-            // Håndter rod-niveau (kun nødvendigt hvis kaldt med appState.itemsTree direkte)
-            // Denne del er nu overflødig, da vi starter rekursionen for hver top-level kategori i displayItems
-            // og for hver subkategori i den rekursive del ovenfor.
-            // Vi fjerner denne for at undgå dobbelt-tælling.
-            /*
-            if (node === appState.itemsTree) {
-                 Object.keys(node).forEach(key => {
-                    if (typeof node[key] === 'object' && node[key] !== null && !Array.isArray(node[key])) {
-                         totalWeight += calculateTotalPackedWeight(node[key]);
-                    }
-                 });
-            }
-            */
-            return totalWeight;
-         }
+         // === Funktion: Beregn Total Vægt ===
+         function calculateTotalPackedWeight(node) { /* ... uændret ... */ let totalWeight = 0; if (node.items && Array.isArray(node.items)) { node.items.forEach(item => { const isPacked = item.packed === true; const weight = typeof item.weight === 'number' && item.weight > 0 ? item.weight : 0; const quantity = typeof item.quantity === 'number' && item.quantity >= 1 ? item.quantity : 1; if (isPacked && weight > 0) { totalWeight += weight * quantity; } }); } if (node.subcategories) { Object.keys(node.subcategories).forEach(key => { totalWeight += calculateTotalPackedWeight(node.subcategories[key]); }); } return totalWeight; }
 
-        // === NY Funktion: Opdater Total Vægt Display ===
-        function updateTotalWeightDisplay() {
-            // Beregn total for HELE træet ved at starte fra roden
-             let overallTotalWeight = 0;
-             Object.keys(appState.itemsTree).forEach(key => {
-                 overallTotalWeight += calculateTotalPackedWeight(appState.itemsTree[key]);
-             });
-
-            const totalKg = overallTotalWeight / 1000;
-            const displayElement = document.getElementById('totalPackedWeightDisplay');
-
-            if (displayElement) {
-                 if (totalKg > 0) {
-                     displayElement.textContent = `Total Vægt (Pakket): ${totalKg.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`;
-                 } else {
-                     displayElement.textContent = ''; // Skjul hvis 0
-                 }
-            }
-        }
+        // === Funktion: Opdater Total Vægt Display ===
+        function updateTotalWeightDisplay() { /* ... uændret ... */ let overallTotalWeight = 0; Object.keys(appState.itemsTree).forEach(key => { overallTotalWeight += calculateTotalPackedWeight(appState.itemsTree[key]); }); const totalKg = overallTotalWeight / 1000; const displayElement = document.getElementById('totalPackedWeightDisplay'); if (displayElement) { if (totalKg > 0) { displayElement.textContent = `Total Vægt (Pakket): ${totalKg.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`; } else { displayElement.textContent = ''; } } }
 
 
         // === Event Listeners ===
@@ -376,12 +308,35 @@
         itemNameInput.addEventListener('keypress', (e)=>{if(e.key==='Enter'){if(itemCategoryInput.value.trim() || editingItemId !== null){addItem();}else{itemCategoryInput.focus();}}});
         itemCategoryInput.addEventListener('keypress', (e)=>{if(e.key==='Enter'){if(itemNameInput.value.trim()){addItem();}else{itemNameInput.focus();}}});
         removeImageBtn.addEventListener('click', () => { shouldRemoveImage = true; editImagePreviewContainer.classList.add('hidden'); itemImageInput.value = ''; });
-        exportBtn.addEventListener('click', () => { const exportText = generateExportText(); exportTextArea.value = exportText; showExportModal(); });
+        // exportBtn.addEventListener('click', showExportModal); // Fjernet - erstattet af menu
         copyExportBtn.addEventListener('click', () => { navigator.clipboard.writeText(exportTextArea.value).then(() => { const originalText = copyExportBtn.textContent; copyExportBtn.textContent = 'Kopieret!'; setTimeout(() => { copyExportBtn.textContent = originalText; }, 1500); }).catch(err => { console.error('Fejl ved kopiering: ', err); showAlertModal('Kunne ikke kopiere teksten automatisk. Prøv manuelt.'); }); });
         printPageBtn.addEventListener('click', () => { const printHtml = generatePrintHtml(); const printWindow = window.open('', '_blank'); if(printWindow) { printWindow.document.write(printHtml); printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); }, 500); hideExportModal(); } else { showAlertModal('Kunne ikke åbne print-vindue. Tillad pop-ups for denne side.'); } });
         closeExportBtn.addEventListener('click', hideExportModal);
         exportModal.addEventListener('click', (e) => { if (e.target === exportModal) hideExportModal(); });
         toggleFormBtn.addEventListener('click', () => { const isActive = addEditFormContainer.classList.contains('active'); if (!isActive) { resetFormFields(); editingItemId = null; editingItemPath = null; addItemBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /> </svg>Tilføj til kuffert`; cancelEditBtn.classList.add('hidden'); itemCategoryInput.disabled = false; itemImageInput.disabled = false; itemWeightInput.disabled = false; addEditFormContainer.classList.add('active'); toggleFormBtn.innerHTML = ICON_X; toggleFormBtn.title = 'Luk formular'; itemNameInput.focus(); } else { cancelEditItem(); } });
+
+        // --- NYE Listeners for Menu ---
+        mainMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Undgå at body click lukker med det samme
+            mainMenuDropdown.classList.toggle('hidden');
+        });
+
+        exportPrintMenuItem.addEventListener('click', () => {
+            showExportModal();
+            mainMenuDropdown.classList.add('hidden');
+        });
+
+        saveToFileMenuItem.addEventListener('click', () => {
+            saveToFile();
+            mainMenuDropdown.classList.add('hidden');
+        });
+
+        loadFromFileMenuItem.addEventListener('click', () => {
+            loadFileInput.click(); // Åbn filvælger
+            mainMenuDropdown.classList.add('hidden');
+        });
+
+        loadFileInput.addEventListener('change', loadFromFile);
 
 
         // === Initialisering ===
@@ -395,16 +350,98 @@
             alertModal.addEventListener('click', (e) => { if (e.target === alertModal) hideAlertModal(); });
             // Central Træ Listener
             categoryTreeContainer.addEventListener('click', handleTreeClick);
-            // Global Listener til at lukke menuer ved klik udenfor
+            // Global Listener til at lukke dropdowns (menu og action)
             document.addEventListener('click', (event) => {
+                // Luk item action menu
                 if (!event.target.closest('.item-action-menu') && !event.target.closest('.item-action-menu-btn')) {
                     closeAllActionMenus();
                 }
+                // Luk main dropdown menu
+                if (!event.target.closest('#mainMenuBtn') && !event.target.closest('#mainMenuDropdown')) {
+                   mainMenuDropdown.classList.add('hidden');
+                }
             });
             // Start App
-            displayItems(); // Kalder nu også updateTotalWeightDisplay
+            displayItems();
             updateCategorySuggestions();
         });
+
+        // === NY Funktion: Gem til Fil ===
+        function saveToFile() {
+            try {
+                const dataToSave = appState.itemsTree;
+                const jsonString = JSON.stringify(dataToSave, null, 2); // Pretty print
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                // Foreslå filnavn med dato
+                const dateStamp = new Date().toISOString().slice(0, 10);
+                link.download = `cozy-kuffert-${dateStamp}.json`;
+                document.body.appendChild(link); // Nødvendigt for Firefox
+                link.click();
+                document.body.removeChild(link); // Ryd op
+                // Frigiv URL efter kort tid
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+                showAlertModal("Pakkeliste gemt som fil.", "Succes");
+            } catch (error) {
+                console.error("Fejl ved gem til fil:", error);
+                showError("Kunne ikke gemme pakkelisten som fil.");
+            }
+        }
+
+        // === NY Funktion: Hent fra Fil ===
+        function loadFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return; // Ingen fil valgt
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                try {
+                    const loadedData = JSON.parse(e.target.result);
+
+                    // Simpel validering: Er det et objekt?
+                    if (typeof loadedData !== 'object' || loadedData === null || Array.isArray(loadedData)) {
+                        throw new Error("Filen indeholder ikke gyldige kuffert-data (ikke et objekt).");
+                    }
+                    // TODO: Mere avanceret validering af strukturen kunne tilføjes her
+
+                    // Vis bekræftelse før overskrivning
+                    showConfirmationModal(
+                        `Er du sikker på, du vil indlæse "${file.name}"? Den nuværende pakkeliste i browseren vil blive overskrevet.`,
+                        () => { // onConfirm
+                            appState.itemsTree = loadedData;
+                            savePackedItems(); // Gem den nye state til localStorage
+                            displayItems(); // Opdater UI
+                            updateCategorySuggestions(); // Opdater forslag
+                            showAlertModal(`Pakkeliste "${file.name}" indlæst!`, "Succes");
+                        },
+                        () => { // onCancel
+                            showAlertModal("Indlæsning afbrudt.", "Info");
+                        }
+                    );
+
+                } catch (error) {
+                    console.error("Fejl ved indlæsning/parsing af fil:", error);
+                    showError(`Kunne ikke indlæse filen. Er det en gyldig JSON-fil genereret af Cozy Kuffert? Fejl: ${error.message}`);
+                } finally {
+                    // Nulstil input så samme fil kan vælges igen
+                    event.target.value = null;
+                }
+            };
+
+            reader.onerror = (e) => {
+                console.error("Fejl ved læsning af fil:", e);
+                showError("Der opstod en fejl under læsning af filen.");
+                event.target.value = null; // Nulstil input
+            };
+
+            reader.readAsText(file);
+        }
+
     </script>
 
 </body>
