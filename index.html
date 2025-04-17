@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel = "apple-touch-icon" href = "briefcase.jpeg">
     <title>Min Hyggelige Virtuelle Kuffert</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -95,93 +96,168 @@
     <div id="alertModal" class="modal-overlay"><div class="modal-box"><h3 id="alertModalTitle" class="modal-title">Besked</h3><p id="alertModalMessage" class="modal-message">Dette er en besked.</p><div class="modal-buttons"><button id="alertOkBtn" class="modal-button modal-button-ok">OK</button></div></div></div>
 
     <script>
-        // === Konstanter ===
-        const PACKED_ITEMS_KEY = 'packedItemsTree';
-        const CATEGORY_SEPARATOR = '>';
+        // ====================================
+        // === Konstanter & Globale Variabler ===
+        // ====================================
+        const PACKED_ITEMS_KEY = 'packedItemsTree'; // Nøgle til localStorage
+        const CATEGORY_SEPARATOR = '>'; // Separator for kategori-stier
 
-        // === DOM Elementer ===
-        const itemNameInput = document.getElementById('itemName'); const itemCategoryInput = document.getElementById('itemCategory'); const itemImageInput = document.getElementById('itemImage'); const addItemBtn = document.getElementById('addItemBtn'); const addCategoryBtn = document.getElementById('addCategoryBtn'); const suitcaseContent = document.getElementById('suitcaseContent'); const categoryTreeContainer = document.getElementById('categoryTreeContainer'); const categorySuggestions = document.getElementById('categorySuggestions'); const errorMessage = document.getElementById('errorMessage'); const emptyMessage = document.getElementById('emptyMessage'); const confirmationModal = document.getElementById('confirmationModal'); const confirmationModalTitle = document.getElementById('confirmationModalTitle'); const confirmationModalMessage = document.getElementById('confirmationModalMessage'); const confirmCancelBtn = document.getElementById('confirmCancelBtn'); const confirmOkBtn = document.getElementById('confirmOkBtn'); const alertModal = document.getElementById('alertModal'); const alertModalTitle = document.getElementById('alertModalTitle'); const alertModalMessage = document.getElementById('alertModalMessage'); const alertOkBtn = document.getElementById('alertOkBtn');
+        // === App State (Central State Management) ===
+        let appState = {
+            itemsTree: {} // Holder hele træstrukturen af kategorier og items
+        };
 
-        // === App State ===
-        let appState = { itemsTree: {} };
+        // === DOM Element Referencer ===
+        const itemNameInput = document.getElementById('itemName');
+        const itemCategoryInput = document.getElementById('itemCategory');
+        const itemImageInput = document.getElementById('itemImage');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const addCategoryBtn = document.getElementById('addCategoryBtn');
+        const suitcaseContent = document.getElementById('suitcaseContent'); // Bruges til tom besked
+        const categoryTreeContainer = document.getElementById('categoryTreeContainer'); // Container for selve træet
+        const categorySuggestions = document.getElementById('categorySuggestions');
+        const errorMessage = document.getElementById('errorMessage');
+        const emptyMessage = document.getElementById('emptyMessage');
+        // Modal Elementer
+        const confirmationModal = document.getElementById('confirmationModal');
+        const confirmationModalTitle = document.getElementById('confirmationModalTitle');
+        const confirmationModalMessage = document.getElementById('confirmationModalMessage');
+        const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+        const confirmOkBtn = document.getElementById('confirmOkBtn');
+        const alertModal = document.getElementById('alertModal');
+        const alertModalTitle = document.getElementById('alertModalTitle');
+        const alertModalMessage = document.getElementById('alertModalMessage');
+        const alertOkBtn = document.getElementById('alertOkBtn');
 
-        // === Hjælpefunktioner (UI & Sti Parsing) ===
+        // ========================================
+        // === Hjælpefunktioner (UI, Sti, Data) ===
+        // ========================================
+
+        // --- UI Hjælpere ---
         function showError(message) { console.error("Fejl vist til bruger:", message); errorMessage.textContent = `Fejl: ${message}`; errorMessage.classList.remove('hidden'); }
         function hideError() { errorMessage.classList.add('hidden'); errorMessage.textContent = ''; }
         function parseCategoryPath(pathString) { return pathString.split(CATEGORY_SEPARATOR).map(part => part.trim()).filter(part => part.length > 0); }
 
-        // === Data Håndtering ===
+        // --- Data Håndtering ---
         function loadInitialItems() { const i=localStorage.getItem(PACKED_ITEMS_KEY); try{const p=JSON.parse(i);return typeof p==='object'&&p!==null?p:{};}catch(e){console.error("Parsing error:", e);return{};} }
         function savePackedItems() { try{localStorage.setItem(PACKED_ITEMS_KEY,JSON.stringify(appState.itemsTree));}catch(e){console.error("Saving error:", e);showError("Kunne ikke gemme ændringer til lokal lagerplads.");} }
         function getOrCreateCategoryNode(t,a){ let n=t;a.forEach((p,i)=>{if(i===0){if(!n[p]){n[p]={items:[],subcategories:{}};}}else{if(!n.subcategories){n.subcategories={};}if(!n.subcategories[p]){n.subcategories[p]={items:[],subcategories:{}};}}n=(i===0)?n[p]:n.subcategories[p];});if(!n.items){n.items=[];}return n;}
         function findNodeAndParent(t,a){ let p=null,n=t,k=null;for(let i=0;i<a.length;i++){k=a[i];p=n;if(i===0){n=n[k];}else{if(!p||!p.subcategories)return{parent:null,node:null,key:null};n=p.subcategories[k];}if(!n)return{parent:null,node:null,key:null};}if(a.length===1){p=t;}return{parent:p,node:n,key:k};}
         function removeCollapseStatesRecursive(t,a){ const k=`category_${a.join('_')}_collapsed`;localStorage.removeItem(k);const{node:n}=findNodeAndParent(t,a);if(n&&n.subcategories){Object.keys(n.subcategories).forEach(sK=>{removeCollapseStatesRecursive(t,[...a,sK]);});}}
 
+        // --- Billedhåndtering ---
+        function handleImageUpload(imageFile, onImageReady, onError) { if (!imageFile.type.startsWith('image/')) { onError('Ugyldig filtype. Vælg venligst et billede.'); return; } const maxSizeMB = 2; if (imageFile.size > maxSizeMB * 1024 * 1024) { onError(`Billedfil er for stor (maks ${maxSizeMB} MB).`); return; } const reader = new FileReader(); reader.onloadend = () => { onImageReady(reader.result); }; reader.onerror = () => { console.error("FileReader error:", reader.error); onError('Ukendt fejl ved indlæsning af billede.'); }; reader.readAsDataURL(imageFile); }
+
+        // ===================
         // === Modal Logik ===
+        // ===================
         let confirmCallback = null; let cancelCallback = null;
         function showConfirmationModal(m, onC, onA = null) { confirmationModalMessage.textContent = m; confirmCallback = onC; cancelCallback = onA; confirmationModal.classList.add('active'); }
         function hideConfirmationModal() { confirmationModal.classList.remove('active'); confirmCallback = null; cancelCallback = null; }
         function showAlertModal(m, t = "Besked") { alertModalTitle.textContent = t; alertModalMessage.textContent = m; alertModal.classList.add('active'); }
         function hideAlertModal() { alertModal.classList.remove('active'); }
 
-        // === DOM Opdatering ===
-        // --- KORREKT updateCategorySuggestions ---
+        // ==================================
+        // === DOM Opdatering / Rendering ===
+        // ==================================
         function updateCategorySuggestions() {
             const suggestions = new Set();
-            function collectPaths(node, currentPath) { // Korrekt funktionsnavn
-                const children = node.subcategories || node;
-                const categoryNames = Object.keys(children);
+            function collectPaths(node, currentPath) {
+                const children = node.subcategories || node; const categoryNames = Object.keys(children);
                 categoryNames.forEach(categoryName => {
                      if (categoryName === 'items' || categoryName === 'subcategories') return;
-                    const childNode = children[categoryName]; // Brug andet variabelnavn
-                    if (typeof childNode !== 'object' || childNode === null) return;
+                    const childNode = children[categoryName]; if (typeof childNode !== 'object' || childNode === null) return;
                     const newPath = currentPath ? [...currentPath, categoryName] : [categoryName];
                     suggestions.add(newPath.join(` ${CATEGORY_SEPARATOR} `));
-                    if (childNode.subcategories) {
-                        collectPaths(childNode, newPath); // Korrekt rekursivt kald
-                    }
+                    if (childNode.subcategories) { collectPaths(childNode, newPath); }
                 });
             }
-            collectPaths(appState.itemsTree, null); // Start med appState
-            categorySuggestions.innerHTML = '';
+            collectPaths(appState.itemsTree, null); categorySuggestions.innerHTML = '';
             suggestions.forEach(suggestion => { const option = document.createElement('option'); option.value = suggestion; categorySuggestions.appendChild(option); });
         }
-        // --- Slut KORREKT updateCategorySuggestions ---
 
-        function displayItems() { const itemsTree=appState.itemsTree;categoryTreeContainer.innerHTML='';const c=Object.keys(itemsTree).sort();if(c.length===0){emptyMessage.classList.remove('hidden');return;}else{emptyMessage.classList.add('hidden');}c.forEach(cN=>{if(typeof itemsTree[cN]==='object'&&itemsTree[cN]!==null){renderCategoryNode(itemsTree[cN],cN,categoryTreeContainer,[cN]);}}); }
-        function createCategoryHeaderElement(nodeName, currentPath) { const categoryHeader = document.createElement('div'); categoryHeader.className = 'category-header p-3 flex justify-between items-center border-b'; const deleteCategoryButton = document.createElement('button'); deleteCategoryButton.className = 'delete-category-btn p-1 rounded-full mr-2'; deleteCategoryButton.title = `Slet hele kategorien '${nodeName}' og alt indhold`; deleteCategoryButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>`; deleteCategoryButton.dataset.categoryPath = currentPath.join(','); const headerContent = document.createElement('div'); headerContent.className = "flex items-center flex-grow min-w-0"; headerContent.appendChild(deleteCategoryButton); const titleElement = document.createElement('h3'); titleElement.className = "text-lg font-semibold truncate"; titleElement.textContent = nodeName; headerContent.appendChild(titleElement); const toggleIconContainer = document.createElement('div'); toggleIconContainer.className = "flex-shrink-0 ml-2"; toggleIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 toggle-icon"> <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /> </svg>`; categoryHeader.appendChild(headerContent); categoryHeader.appendChild(toggleIconContainer); return categoryHeader; }
-        function createItemElement(item, currentPath) { const itemDiv = document.createElement('div'); itemDiv.className = 'item-div item-added flex items-center justify-between p-2 rounded-md border'; const itemInfo = document.createElement('div'); itemInfo.className = 'flex items-center space-x-3 flex-grow min-w-0'; if (item.image) { const img = document.createElement('img'); img.src = item.image; img.alt = item.name; img.className = 'item-image flex-shrink-0'; itemInfo.appendChild(img); } else { const placeholder = document.createElement('div'); placeholder.className = 'item-image-placeholder item-image flex-shrink-0 flex items-center justify-center rounded-md'; placeholder.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>`; itemInfo.appendChild(placeholder); } const itemNameElement = document.createElement('span'); itemNameElement.textContent = item.name; itemNameElement.className = 'item-name truncate'; itemInfo.appendChild(itemNameElement); itemDiv.appendChild(itemInfo); const deleteButton = document.createElement('button'); deleteButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>`; deleteButton.title = `Slet ${item.name}`; deleteButton.className = 'delete-btn p-2 rounded-full flex-shrink-0 ml-2'; deleteButton.dataset.itemId = item.id; deleteButton.dataset.itemPath = currentPath.join(','); deleteButton.dataset.itemName = item.name; itemDiv.appendChild(deleteButton); return itemDiv; }
+        function displayItems() {
+            const itemsTree=appState.itemsTree; categoryTreeContainer.innerHTML=''; const topLevelCategories=Object.keys(itemsTree).sort();
+            if(topLevelCategories.length===0){emptyMessage.classList.remove('hidden');return;}else{emptyMessage.classList.add('hidden');}
+            topLevelCategories.forEach(categoryName=>{if(typeof itemsTree[categoryName]==='object'&&itemsTree[categoryName]!==null){renderCategoryNode(itemsTree[categoryName],categoryName,categoryTreeContainer,[categoryName]);}});
+        }
+
+        // --- DOM Hjælpefunktion: Opret Kategori Header ---
+        function createCategoryHeaderElement(nodeName, currentPath) {
+            const categoryHeader = document.createElement('div'); categoryHeader.className = 'category-header p-3 flex justify-between items-center border-b';
+            const deleteCategoryButton = document.createElement('button'); deleteCategoryButton.className = 'delete-category-btn p-1 rounded-full mr-2'; deleteCategoryButton.title = `Slet hele kategorien '${nodeName}' og alt indhold`; deleteCategoryButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>`;
+            deleteCategoryButton.dataset.categoryPath = currentPath.join(','); // Sæt data-attribut
+            const headerContent = document.createElement('div'); headerContent.className = "flex items-center flex-grow min-w-0"; headerContent.appendChild(deleteCategoryButton); const titleElement = document.createElement('h3'); titleElement.className = "text-lg font-semibold truncate"; titleElement.textContent = nodeName; headerContent.appendChild(titleElement);
+            const toggleIconContainer = document.createElement('div'); toggleIconContainer.className = "flex-shrink-0 ml-2"; toggleIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 toggle-icon"> <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /> </svg>`;
+            categoryHeader.appendChild(headerContent); categoryHeader.appendChild(toggleIconContainer);
+            return categoryHeader;
+        }
+
+        // --- DOM Hjælpefunktion: Opret Item Element ---
+        function createItemElement(item, currentPath) {
+            const itemDiv = document.createElement('div'); itemDiv.className = 'item-div item-added flex items-center justify-between p-2 rounded-md border';
+            const itemInfo = document.createElement('div'); itemInfo.className = 'flex items-center space-x-3 flex-grow min-w-0';
+            // Billede/Placeholder
+            if (item.image) { const img = document.createElement('img'); img.src = item.image; img.alt = item.name; img.className = 'item-image flex-shrink-0'; itemInfo.appendChild(img); }
+            else { const placeholder = document.createElement('div'); placeholder.className = 'item-image-placeholder item-image flex-shrink-0 flex items-center justify-center rounded-md'; placeholder.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>`; itemInfo.appendChild(placeholder); }
+            // Navn
+            const itemNameElement = document.createElement('span'); itemNameElement.textContent = item.name; itemNameElement.className = 'item-name truncate'; itemInfo.appendChild(itemNameElement);
+            itemDiv.appendChild(itemInfo);
+            // Item Slet Knap
+            const deleteButton = document.createElement('button'); deleteButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>`; deleteButton.title = `Slet ${item.name}`; deleteButton.className = 'delete-btn p-2 rounded-full flex-shrink-0 ml-2';
+            deleteButton.dataset.itemId = item.id; deleteButton.dataset.itemPath = currentPath.join(','); deleteButton.dataset.itemName = item.name; // Sæt data-attributter
+            itemDiv.appendChild(deleteButton);
+            return itemDiv;
+        }
+
+        // --- Hoved Rendering Funktion ---
         function renderCategoryNode(nD,nN,pE,cP){if(!nD)return;const cD=document.createElement('div');cD.className='category-node border rounded-lg overflow-hidden mb-3';const cH=createCategoryHeaderElement(nN,cP);const cCo=document.createElement('div');cCo.className='category-content p-4 space-y-3';const cSK=`category_${cP.join('_')}_collapsed`;const iC=localStorage.getItem(cSK)==='true';const tI=cH.querySelector('.toggle-icon');if(iC){cCo.classList.add('hidden');if(tI)tI.style.transform='rotate(-90deg)';}else{if(tI)tI.style.transform='rotate(0deg)';}cH.addEventListener('click',(e)=>{if(e.target.closest('.delete-category-btn'))return;const cHi=cCo.classList.toggle('hidden');localStorage.setItem(cSK,cHi);if(tI)tI.style.transform=cHi?'rotate(-90deg)':'rotate(0deg)';});cD.appendChild(cH);cD.appendChild(cCo);if(nD.items&&nD.items.length>0){nD.items.forEach(item=>{const iE=createItemElement(item,cP);cCo.appendChild(iE);});}if(nD.subcategories&&Object.keys(nD.subcategories).length>0){const sC=document.createElement('div');sC.className='subcategory-container mt-4 space-y-3';const sCN=Object.keys(nD.subcategories).sort();sCN.forEach(sCN=>{const nP=[...cP,sCN];renderCategoryNode(nD.subcategories[sCN],sCN,sC,nP);});cCo.appendChild(sC);}pE.appendChild(cD);}
 
-        // === Kernefunktionalitet: Tilføjelse af Ting ===
-        function handleImageUpload(imageFile, onImageReady, onError) { if (!imageFile.type.startsWith('image/')) { onError('Ugyldig filtype. Vælg venligst et billede.'); return; } const maxSizeMB = 2; if (imageFile.size > maxSizeMB * 1024 * 1024) { onError(`Billedfil er for stor (maks ${maxSizeMB} MB).`); return; } const reader = new FileReader(); reader.onloadend = () => { onImageReady(reader.result); }; reader.onerror = () => { console.error("FileReader error:", reader.error); onError('Ukendt fejl ved indlæsning af billede.'); }; reader.readAsDataURL(imageFile); }
+        // ========================================
+        // === Kernefunktionalitet / Event Handlers ===
+        // ========================================
+
+        // --- Tilføj Item ---
         function addItem() { hideError(); const name = itemNameInput.value.trim(); const categoryPathString = itemCategoryInput.value.trim(); const imageFile = itemImageInput.files[0]; if (!name) { showError('Navn på ting skal udfyldes.'); itemNameInput.focus(); return; } if (!categoryPathString) { showError('Kategori skal udfyldes.'); itemCategoryInput.focus(); return; } const categoryPath = parseCategoryPath(categoryPathString); if (categoryPath.length === 0) { showError('Ugyldigt kategori format (brug f.eks. Hovedkategori > Underkategori).'); itemCategoryInput.focus(); return; } const newItem = { id: Date.now() + Math.random(), name: name, image: null }; const targetNode = getOrCreateCategoryNode(appState.itemsTree, categoryPath); const finalizeAddItem = () => { targetNode.items.push(newItem); savePackedItems(); displayItems(); updateCategorySuggestions(); itemNameInput.value = ''; itemImageInput.value = ''; itemNameInput.focus(); }; if (imageFile) { handleImageUpload(imageFile, (imageDataUrl) => { newItem.image = imageDataUrl; finalizeAddItem(); }, (errorMessageText) => { showError(errorMessageText); itemImageInput.value = ''; }); } else { finalizeAddItem(); } }
 
-        // === Kernefunktionalitet: Tilføj Kategori til Forslag ===
+        // --- Tilføj Kategori til Forslag ---
         function addCategoryToList(){ hideError();const cPS=itemCategoryInput.value.trim();if(cPS){const cP=parseCategoryPath(cPS);if(cP.length===0){showError('Ugyldigt kategori format.');return;}const fP=cP.join(` ${CATEGORY_SEPARATOR} `);const eO=Array.from(categorySuggestions.options).map(o=>o.value);if(!eO.includes(fP)){const o=document.createElement('option');o.value=fP;categorySuggestions.appendChild(o);showAlertModal(`Stien "${fP}" er tilføjet til forslagslisten.`);itemCategoryInput.value='';}else{showAlertModal(`Stien "${fP}" findes allerede på forslagslisten.`);}}else{showError('Skriv en kategori/sti i kategorifeltet først for at tilføje den til listen.');itemCategoryInput.focus();}}
 
-        // === Event Handlers for Sletning (Opdelt) ===
+        // --- Slet Item (via delegation) ---
         function handleItemDeleteClick(deleteButton) { const itemId = deleteButton.dataset.itemId; const itemPathString = deleteButton.dataset.itemPath; const itemName = deleteButton.dataset.itemName; if (itemId && itemPathString && itemName) { const itemPath = itemPathString.split(','); showConfirmationModal( `Er du sikker på, du vil slette "${itemName}" fra kategorien "${itemPath.join(` ${CATEGORY_SEPARATOR} `)}"?`, () => { const { parent: cPN, node: cN, key: cK } = findNodeAndParent(appState.itemsTree, itemPath); if (!cN) { showError(`Kunne ikke finde kategori '${itemPath.join(' > ')}' under sletning.`); return; } if (cN.items) { const iI = cN.items.findIndex(i => String(i.id) === String(itemId)); if (iI > -1) { cN.items.splice(iI, 1); const sK = cN.subcategories ? Object.keys(cN.subcategories) : []; if (cN.items.length === 0 && sK.length === 0 && cPN && cK) { if (cPN === appState.itemsTree) { delete cPN[cK]; } else if (cPN.subcategories) { delete cPN.subcategories[cK]; } localStorage.removeItem(`category_${itemPath.join('_')}_collapsed`); } savePackedItems(); displayItems(); updateCategorySuggestions(); } else { showError(`Kunne ikke finde tingen med ID ${itemId} i kategorien.`); } } else { showError(`Kategorien '${itemPath.join(' > ')}' mangler en item-liste.`); } }); } else { console.error("Mangler data attr på item slet:", deleteButton); showError("Kunne ikke identificere elementet der skal slettes (manglende data)."); } }
+
+        // --- Slet Kategori (via delegation) ---
         function handleCategoryDeleteClick(deleteButton) { const categoryPathString = deleteButton.dataset.categoryPath; if (categoryPathString) { const categoryPath = categoryPathString.split(','); const categoryName = categoryPath[categoryPath.length - 1]; showConfirmationModal( `Er du sikker på, du vil slette kat. "${categoryName}" (${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}) og alt indhold? Kan ikke fortrydes.`, () => { const treeBeforeDelete = JSON.parse(JSON.stringify(appState.itemsTree)); const { parent: parentNode, node: nodeToDelete, key: nodeKey } = findNodeAndParent(appState.itemsTree, categoryPath); if (!nodeToDelete) { showError(`Kunne ikke finde kategori "${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}" til sletning.`); return; } if (parentNode === appState.itemsTree) { delete parentNode[nodeKey]; } else if (parentNode && parentNode.subcategories) { delete parentNode.subcategories[nodeKey]; } else { showError(`Kunne ikke finde forælder til kategori "${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}" under sletning.`); return; } removeCollapseStatesRecursive(treeBeforeDelete, categoryPath); savePackedItems(); displayItems(); updateCategorySuggestions(); }); } else { console.error("Mangler data-cat-path:", deleteCategoryButton); showError("Kunne ikke identificere kategorien der skal slettes (manglende data)."); } }
 
-        // === Central Event Handler for Træ-Klik ===
+        // --- Central Event Handler for Træ-Klik ---
         function handleTreeClick(event) { const targetElement = event.target; const deleteItemButton = targetElement.closest('.delete-btn'); if (deleteItemButton) { handleItemDeleteClick(deleteItemButton); return; } const deleteCategoryButton = targetElement.closest('.delete-category-btn'); if (deleteCategoryButton) { handleCategoryDeleteClick(deleteCategoryButton); return; } }
 
+        // =======================
         // === Event Listeners ===
+        // =======================
         addItemBtn.addEventListener('click', addItem);
         addCategoryBtn.addEventListener('click', addCategoryToList);
         itemNameInput.addEventListener('keypress', (e)=>{if(e.key==='Enter'){if(itemCategoryInput.value.trim()){addItem();}else{itemCategoryInput.focus();}}});
         itemCategoryInput.addEventListener('keypress', (e)=>{if(e.key==='Enter'){if(itemNameInput.value.trim()){addItem();}else{itemNameInput.focus();}}});
 
+        // =====================
         // === Initialisering ===
+        // =====================
         document.addEventListener('DOMContentLoaded', () => {
+            // Indlæs data til state
             appState.itemsTree = loadInitialItems();
+
+            // Sæt listeners på Modals (gøres kun én gang)
             confirmOkBtn.addEventListener('click', () => { if (typeof confirmCallback === 'function') { confirmCallback(); } hideConfirmationModal(); });
             confirmCancelBtn.addEventListener('click', () => { if (typeof cancelCallback === 'function') { cancelCallback(); } hideConfirmationModal(); });
             confirmationModal.addEventListener('click', (e) => { if (e.target === confirmationModal) { hideConfirmationModal(); if (typeof cancelCallback === 'function') cancelCallback(); } });
             alertOkBtn.addEventListener('click', hideAlertModal);
             alertModal.addEventListener('click', (e) => { if (e.target === alertModal) hideAlertModal(); });
+
+            // Sæt central listener på træ-containeren
             categoryTreeContainer.addEventListener('click', handleTreeClick);
+
+            // Vis indhold og forslag
             displayItems();
             updateCategorySuggestions();
         });
