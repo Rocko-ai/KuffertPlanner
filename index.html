@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel = "apple-touch-icon" href = "briefcase.jpeg">
     <title>Cozy Kuffert</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel = "apple-touch-icon" href = "briefcase.jpeg">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -101,23 +100,7 @@
         #exportTextArea { font-family: monospace; font-size: 0.875rem; line-height: 1.5; border: 1px solid #fbcfe8; background-color: #fdf2f8; min-height: 200px; }
 
         /* --- Print Styles --- */
-        @media print {
-            body { background-color: white !important; color: black !important; font-family: sans-serif; margin: 1cm; }
-            #headerContainer, .add-item-section, .modal-overlay, .item-action-menu-btn, .item-action-menu, .delete-category-btn, .category-header .toggle-icon, #errorMessage, #emptyMessage { display: none !important; }
-            .main-container { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
-            #suitcaseContent h2 { font-size: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid #ccc; color: black !important; }
-            .category-node { border: none !important; box-shadow: none !important; margin-bottom: 0.5rem; page-break-inside: avoid; }
-            .category-header { background: none !important; border-bottom: 1px solid #eee !important; padding: 0.25rem 0 !important; }
-            .category-header h3 { font-size: 1.1rem; font-weight: bold; color: black !important; }
-            .category-content { display: block !important; padding: 0 0 0.5rem 0 !important; background-color: transparent !important; }
-            .subcategory-container { margin-left: 1rem; padding-left: 0.5rem; border-left: 1px solid #eee; margin-top: 0.25rem; }
-            .item-div { border: none !important; padding: 0.1rem 0 !important; page-break-inside: avoid; opacity: 1 !important; }
-            .item-div.packed .item-name { text-decoration: line-through; color: #555; }
-            .item-name { color: black !important; font-weight: normal; text-decoration: none; }
-            .item-quantity-prefix { color: black !important; font-weight: normal; }
-            /* Skjul billeder under print for nu - kan ændres i B.7 */
-            .item-image, .item-image-placeholder { display: none !important; }
-        }
+        /* Fjernet @media print sektion - håndteres nu via JavaScript */
 
     </style>
 </head>
@@ -134,21 +117,21 @@
         <div class="add-item-section mb-8 p-4 border rounded-lg">
             <h2 class="add-item-title text-xl font-semibold mb-4">Tilføj en ting</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div> <label for="itemName" class="block text-sm mb-1">Navn på ting:</label> <input type="text" id="itemName" placeholder="F.eks. Blå Jeans" class="w-full border rounded-md"> </div>
-                <div> <label for="itemQuantity" class="block text-sm mb-1">Antal:</label> <input type="number" id="itemQuantity" value="1" min="1" step="1" class="w-full border rounded-md"> </div>
-                <div class="md:col-span-2 xl:col-span-1"> <label for="itemCategory" class="block text-sm mb-1">Kategori (f.eks. Tøj > Bukser):</label> <div class="flex"> <input type="text" id="itemCategory" list="categorySuggestions" placeholder="Hovedkategori > Underkategori" class="flex-grow border border-r-0 rounded-l-md"> <datalist id="categorySuggestions"></datalist> <button id="addCategoryBtn" title="Tilføj kategori/sti til forslagsliste" class="p-2 border border-l-0 rounded-r-md"> <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /> </svg></button> </div> </div>
-                <div class="md:col-span-2 xl:col-span-1">
-                     <label for="itemImage" class="block text-sm mb-1">Billede:</label>
-                     <input type="file" id="itemImage" accept="image/*" class="w-full text-sm">
-                     <div id="editImagePreviewContainer" class="hidden mt-2 flex items-center gap-2">
-                         <img id="editImagePreview" src="" alt="Nuværende billede" class="h-10 w-10 object-cover rounded">
-                         <button type="button" id="removeImageBtn" class="text-xs text-red-600 hover:underline">Fjern billede</button>
-                     </div>
-                </div>
+                 <div> <label for="itemName" class="block text-sm mb-1">Navn på ting:</label> <input type="text" id="itemName" placeholder="F.eks. Blå Jeans" class="w-full border rounded-md"> </div>
+                 <div> <label for="itemQuantity" class="block text-sm mb-1">Antal:</label> <input type="number" id="itemQuantity" value="1" min="1" step="1" class="w-full border rounded-md"> </div>
+                 <div class="md:col-span-2 xl:col-span-1"> <label for="itemCategory" class="block text-sm mb-1">Kategori (f.eks. Tøj > Bukser):</label> <div class="flex"> <input type="text" id="itemCategory" list="categorySuggestions" placeholder="Hovedkategori > Underkategori" class="flex-grow border border-r-0 rounded-l-md"> <datalist id="categorySuggestions"></datalist> <button id="addCategoryBtn" title="Tilføj kategori/sti til forslagsliste" class="p-2 border border-l-0 rounded-r-md"> <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /> </svg></button> </div> </div>
+                 <div class="md:col-span-2 xl:col-span-1">
+                      <label for="itemImage" class="block text-sm mb-1">Billede:</label>
+                      <input type="file" id="itemImage" accept="image/*" class="w-full text-sm">
+                      <div id="editImagePreviewContainer" class="hidden mt-2 flex items-center gap-2">
+                          <img id="editImagePreview" src="" alt="Nuværende billede" class="h-10 w-10 object-cover rounded">
+                          <button type="button" id="removeImageBtn" class="text-xs text-red-600 hover:underline">Fjern billede</button>
+                      </div>
+                 </div>
             </div>
             <div class="mt-4 flex items-center">
-                 <button id="addItemBtn" class="font-semibold py-2 px-6 rounded-md flex items-center justify-center gap-2"> <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /> </svg> Tilføj til kuffert </button>
-                 <button id="cancelEditBtn" class="font-semibold py-2 px-6 rounded-md hidden"> Annuller redigering </button>
+                  <button id="addItemBtn" class="font-semibold py-2 px-6 rounded-md flex items-center justify-center gap-2"> <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /> </svg> Tilføj til kuffert </button>
+                  <button id="cancelEditBtn" class="font-semibold py-2 px-6 rounded-md hidden"> Annuller redigering </button>
             </div>
             <p id="errorMessage" class="text-red-500 text-sm mt-2 hidden"></p>
         </div>
