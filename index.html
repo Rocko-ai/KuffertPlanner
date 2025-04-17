@@ -43,7 +43,8 @@
         /* --- Kuffert Indhold & Kategori Styling --- */
         #suitcaseContent h2 { color: #9d174d; border-bottom-color: #fbcfe8; }
         #emptyMessage { color: #fda4af; }
-        .category-node { border-color: #fce7f3; box-shadow: 0 1px 3px rgba(219, 112, 147, 0.05); margin-bottom: 0.75rem; }
+        .category-node { border-color: #fce7f3; box-shadow: 0 1px 3px rgba(219, 112, 147, 0.05); margin-bottom: 0.75rem; cursor: grab; }
+        .category-node:active { cursor: grabbing; }
         .category-header { background-image: linear-gradient(to bottom, #ffffff, #fdf2f8); border-bottom-color: #fce7f3; cursor: pointer; user-select: none; transition: background-color 0.2s ease; }
         .category-header:hover { background-image: linear-gradient(to bottom, #fdf2f8, #fce7f3); }
         .category-header h3 { color: #be185d; }
@@ -51,7 +52,7 @@
         .delete-category-btn { color: #f9a8d4; background-color: transparent; transition: all 0.2s ease; }
         .delete-category-btn:hover { color: #be185d; background-color: #fce7f3; transform: scale(1.1); }
         .category-content { background-color: #fffafa; min-height: 20px; }
-        .subcategory-container { margin-left: 1rem; padding-left: 1rem; border-left: 2px solid #fce7f3; margin-top: 0.5rem; }
+        .subcategory-container { margin-left: 1rem; padding-left: 1rem; border-left: 2px solid #fce7f3; margin-top: 0.5rem; min-height: 20px; transition: background-color 0.1s ease-in-out; border-radius: 0.375rem; /* Sikrer runde hjørner for highlight */ }
         .subcategory-container .subcategory-container { margin-left: 0.75rem; padding-left: 0.75rem; }
 
         /* --- Item Styling --- */
@@ -72,8 +73,25 @@
         .item-action-menu button:hover { background-color: #fdf2f8; }
 
         /* --- SortableJS Styling --- */
-        .sortable-ghost { opacity: 0.4; background: #fbcfe8; }
         .sortable-drag { opacity: 0.9 !important; }
+        /* Ghost for Items */
+        .item-div.sortable-ghost { opacity: 0.4; background: #fbcfe8; }
+        /* Ghost for Categories (mere diskret) */
+        .category-node.sortable-ghost { background: #fdf2f8; border: 2px dashed #f9a8d4; opacity: 0.6; height: 40px; overflow: hidden; margin-bottom: 0.75rem; box-shadow: none; cursor: grabbing; border-radius: 0.375rem; /* Match andre */ }
+        .category-node.sortable-ghost > * { display: none; }
+        /* Highlight for Drop Zone (Subtil) */
+        #categoryTreeContainer.drop-target-active {
+            background-color: #fef6fa !important; /* Meget lys pink */
+            /* Brug en subtil indre skygge i stedet for outline */
+            box-shadow: inset 0 0 0 2px rgba(244, 114, 182, 0.3); /* Tilpasset farve/opacity */
+        }
+        .subcategory-container.drop-target-active {
+            background-color: #fce7f3 !important; /* Lidt mørkere pink */
+            border-left-color: transparent; /* Skjul den normale venstre kant */
+            /* Brug indre skygge for "kant" der følger runding */
+            box-shadow: inset 0 0 0 2px rgba(236, 72, 153, 0.4); /* Tilpasset farve/opacity */
+        }
+
 
         /* --- Diverse & Animationer --- */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -146,15 +164,18 @@
         const CATEGORY_SEPARATOR = '>';
 
         // === DOM Elementer ===
+        // ... (alle de eksisterende const definitioner) ...
         const itemNameInput = document.getElementById('itemName'); const itemQuantityInput = document.getElementById('itemQuantity'); const itemCategoryInput = document.getElementById('itemCategory'); const itemImageInput = document.getElementById('itemImage'); const addItemBtn = document.getElementById('addItemBtn'); const addCategoryBtn = document.getElementById('addCategoryBtn'); const suitcaseContent = document.getElementById('suitcaseContent'); const categoryTreeContainer = document.getElementById('categoryTreeContainer'); const categorySuggestions = document.getElementById('categorySuggestions'); const errorMessage = document.getElementById('errorMessage'); const emptyMessage = document.getElementById('emptyMessage'); const confirmationModal = document.getElementById('confirmationModal'); const confirmationModalTitle = document.getElementById('confirmationModalTitle'); const confirmationModalMessage = document.getElementById('confirmationModalMessage'); const confirmCancelBtn = document.getElementById('confirmCancelBtn'); const confirmOkBtn = document.getElementById('confirmOkBtn'); const alertModal = document.getElementById('alertModal'); const alertModalTitle = document.getElementById('alertModalTitle'); const alertModalMessage = document.getElementById('alertModalMessage'); const alertOkBtn = document.getElementById('alertOkBtn');
         const cancelEditBtn = document.getElementById('cancelEditBtn'); const exportBtn = document.getElementById('exportBtn'); const exportModal = document.getElementById('exportModal'); const exportTextArea = document.getElementById('exportTextArea'); const copyExportBtn = document.getElementById('copyExportBtn'); const printPageBtn = document.getElementById('printPageBtn'); const closeExportBtn = document.getElementById('closeExportBtn');
         const editImagePreviewContainer = document.getElementById('editImagePreviewContainer'); const editImagePreview = document.getElementById('editImagePreview'); const removeImageBtn = document.getElementById('removeImageBtn');
+
 
         // === App State ===
         let appState = { itemsTree: {} };
         let editingItemId = null;
         let editingItemPath = null;
         let shouldRemoveImage = false;
+        let currentDropTarget = null; // Til D&D highlight
 
         // === Hjælpefunktioner (UI & Sti Parsing) ===
         function showError(message) { console.error("Fejl vist til bruger:", message); errorMessage.textContent = `Fejl: ${message}`; errorMessage.classList.remove('hidden'); }
@@ -162,12 +183,12 @@
         function parseCategoryPath(pathString) { return pathString.split(CATEGORY_SEPARATOR).map(part => part.trim()).filter(part => part.length > 0); }
 
         // === Data Håndtering ===
-        function loadInitialItems() { const i=localStorage.getItem(PACKED_ITEMS_KEY); try{const p=JSON.parse(i);return typeof p==='object'&&p!==null?p:{};}catch(e){console.error("Parsing error:", e);return{};} }
-        function savePackedItems() { try{localStorage.setItem(PACKED_ITEMS_KEY,JSON.stringify(appState.itemsTree));}catch(e){console.error("Saving error:", e);showError("Kunne ikke gemme ændringer til lokal lagerplads.");} }
-        function getOrCreateCategoryNode(t,a){ let n=t;a.forEach((p,i)=>{if(i===0){if(!n[p]){n[p]={items:[],subcategories:{}};}}else{if(!n.subcategories){n.subcategories={};}if(!n.subcategories[p]){n.subcategories[p]={items:[],subcategories:{}};}}n=(i===0)?n[p]:n.subcategories[p];});if(!n.items){n.items=[];}return n;}
-        function findNodeAndParent(t,a){ let p=null,n=t,k=null;for(let i=0;i<a.length;i++){k=a[i];p=n;if(i===0){n=n[k];}else{if(!p||!p.subcategories)return{parent:null,node:null,key:null};n=p.subcategories[k];}if(!n)return{parent:null,node:null,key:null};}if(a.length===1){p=t;}return{parent:p,node:n,key:k};}
-        function removeCollapseStatesRecursive(t,a){ const k=`category_${a.join('_')}_collapsed`;localStorage.removeItem(k);const{node:n}=findNodeAndParent(t,a);if(n&&n.subcategories){Object.keys(n.subcategories).forEach(sK=>{removeCollapseStatesRecursive(t,[...a,sK]);});}}
-        function handleImageUpload(imageFile, onImageReady, onError) { if (!imageFile.type.startsWith('image/')) { onError('Ugyldig filtype. Vælg venligst et billede.'); return; } const maxSizeMB = 2; if (imageFile.size > maxSizeMB * 1024 * 1024) { onError(`Billedfil er for stor (maks ${maxSizeMB} MB).`); return; } const reader = new FileReader(); reader.onloadend = () => { onImageReady(reader.result); }; reader.onerror = () => { console.error("FileReader error:", reader.error); onError('Ukendt fejl ved indlæsning af billede.'); }; reader.readAsDataURL(imageFile); }
+        function loadInitialItems() { /* ... uændret ... */ const i=localStorage.getItem(PACKED_ITEMS_KEY); try{const p=JSON.parse(i);return typeof p==='object'&&p!==null?p:{};}catch(e){console.error("Parsing error:", e);return{};} }
+        function savePackedItems() { /* ... uændret ... */ try{localStorage.setItem(PACKED_ITEMS_KEY,JSON.stringify(appState.itemsTree));}catch(e){console.error("Saving error:", e);showError("Kunne ikke gemme ændringer til lokal lagerplads.");} }
+        function getOrCreateCategoryNode(t,a){ /* ... uændret ... */ let n=t;a.forEach((p,i)=>{if(i===0){if(!n[p]){n[p]={items:[],subcategories:{}};}}else{if(!n.subcategories){n.subcategories={};}if(!n.subcategories[p]){n.subcategories[p]={items:[],subcategories:{}};}}n=(i===0)?n[p]:n.subcategories[p];});if(!n.items){n.items=[];}return n;}
+        function findNodeAndParent(tree, path) { /* ... uændret ... */ let parent = null; let node = tree; let key = null; if (!path || path.length === 0) { return { parent: null, node: tree, key: null }; } for (let i = 0; i < path.length; i++) { key = path[i]; parent = node; if (i === 0) { node = node[key]; } else { if (!parent || !parent.subcategories) { return { parent: null, node: null, key: null }; } node = parent.subcategories[key]; } if (!node) { return { parent: null, node: null, key: null }; } } if (path.length === 1) { parent = tree; } return { parent: parent, node: node, key: key }; }
+        function removeCollapseStatesRecursive(t,a){ /* ... uændret ... */ const k=`category_${a.join('_')}_collapsed`;localStorage.removeItem(k);const{node:n}=findNodeAndParent(t,a);if(n&&n.subcategories){Object.keys(n.subcategories).forEach(sK=>{removeCollapseStatesRecursive(t,[...a,sK]);});}}
+        function handleImageUpload(imageFile, onImageReady, onError) { /* ... uændret ... */ if (!imageFile.type.startsWith('image/')) { onError('Ugyldig filtype. Vælg venligst et billede.'); return; } const maxSizeMB = 2; if (imageFile.size > maxSizeMB * 1024 * 1024) { onError(`Billedfil er for stor (maks ${maxSizeMB} MB).`); return; } const reader = new FileReader(); reader.onloadend = () => { onImageReady(reader.result); }; reader.onerror = () => { console.error("FileReader error:", reader.error); onError('Ukendt fejl ved indlæsning af billede.'); }; reader.readAsDataURL(imageFile); }
 
         // === Modal Logik ===
         let confirmCallback = null; let cancelCallback = null;
@@ -179,17 +200,17 @@
         function hideExportModal() { exportModal.classList.remove('active'); }
 
         // === DOM Opdatering ===
-        function updateCategorySuggestions() { const suggestions = new Set(); function collectPaths(node, currentPath) { const children = node.subcategories || node; const categoryNames = Object.keys(children); categoryNames.forEach(categoryName => { if (categoryName === 'items' || categoryName === 'subcategories') return; const childNode = children[categoryName]; if (typeof childNode !== 'object' || childNode === null) return; const newPath = currentPath ? [...currentPath, categoryName] : [categoryName]; suggestions.add(newPath.join(` ${CATEGORY_SEPARATOR} `)); if (childNode.subcategories) { collectPaths(childNode, newPath); } }); } collectPaths(appState.itemsTree, null); categorySuggestions.innerHTML = ''; suggestions.forEach(suggestion => { const option = document.createElement('option'); option.value = suggestion; categorySuggestions.appendChild(option); }); }
-        function displayItems() { const itemsTree=appState.itemsTree; categoryTreeContainer.innerHTML=''; const topLevelCategories=Object.keys(itemsTree).sort(); if(topLevelCategories.length===0){emptyMessage.classList.remove('hidden');return;}else{emptyMessage.classList.add('hidden');} topLevelCategories.forEach(categoryName=>{if(typeof itemsTree[categoryName]==='object'&&itemsTree[categoryName]!==null){renderCategoryNode(itemsTree[categoryName],categoryName,categoryTreeContainer,[categoryName]);}}); initSortable(); }
-        function createCategoryHeaderElement(nodeName, currentPath) { const categoryHeader = document.createElement('div'); categoryHeader.className = 'category-header p-3 flex justify-between items-center border-b'; const deleteCategoryButton = document.createElement('button'); deleteCategoryButton.className = 'delete-category-btn p-1 rounded-full mr-2'; deleteCategoryButton.title = `Slet hele kategorien '${nodeName}' og alt indhold`; deleteCategoryButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>`; deleteCategoryButton.dataset.categoryPath = currentPath.join(','); const headerContent = document.createElement('div'); headerContent.className = "flex items-center flex-grow min-w-0"; headerContent.appendChild(deleteCategoryButton); const titleElement = document.createElement('h3'); titleElement.className = "text-lg font-semibold truncate"; titleElement.textContent = nodeName; headerContent.appendChild(titleElement); const toggleIconContainer = document.createElement('div'); toggleIconContainer.className = "flex-shrink-0 ml-2"; toggleIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 toggle-icon"> <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /> </svg>`; categoryHeader.appendChild(headerContent); categoryHeader.appendChild(toggleIconContainer); return categoryHeader; }
-        function createItemElement(item, currentPath) { const itemDiv = document.createElement('div'); itemDiv.dataset.itemId = item.id; itemDiv.className = `item-div item-added flex items-center justify-between p-2 rounded-md border ${item.packed ? 'packed' : ''}`; itemDiv.style.position = 'relative'; const itemInfo = document.createElement('div'); itemInfo.className = 'flex items-center space-x-3 flex-grow min-w-0'; if (item.quantity && item.quantity > 1) { const quantitySpan = document.createElement('span'); quantitySpan.className = 'item-quantity-prefix flex-shrink-0'; quantitySpan.textContent = `${item.quantity}x`; itemInfo.appendChild(quantitySpan); } if (item.image) { const img = document.createElement('img'); img.src = item.image; img.alt = item.name; img.className = 'item-image flex-shrink-0'; itemInfo.appendChild(img); } else { const placeholder = document.createElement('div'); placeholder.className = 'item-image-placeholder item-image flex-shrink-0 flex items-center justify-center rounded-md'; placeholder.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>`; itemInfo.appendChild(placeholder); } const itemNameElement = document.createElement('span'); itemNameElement.textContent = item.name; itemNameElement.className = `item-name truncate ${item.packed ? 'line-through' : ''}`; itemInfo.appendChild(itemNameElement); itemDiv.appendChild(itemInfo); const menuButton = document.createElement('button'); menuButton.className = 'item-action-menu-btn flex-shrink-0'; menuButton.title = 'Handlinger'; menuButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" /> </svg>`; menuButton.dataset.itemId = item.id; menuButton.dataset.itemPath = currentPath.join(','); itemDiv.appendChild(menuButton); const actionMenu = document.createElement('div'); actionMenu.className = 'item-action-menu hidden'; actionMenu.dataset.itemId = item.id; actionMenu.dataset.itemPath = currentPath.join(','); actionMenu.innerHTML = `<button class="action-pack w-full text-left" data-item-id="${item.id}" data-item-path="${currentPath.join(',')}">${item.packed ? 'Pak ud' : 'Pak'}</button><button class="action-edit w-full text-left" data-item-id="${item.id}" data-item-path="${currentPath.join(',')}">Rediger</button><button class="action-delete w-full text-left" data-item-id="${item.id}" data-item-path="${currentPath.join(',')}" data-item-name="${item.name}">Slet</button>`; itemDiv.appendChild(actionMenu); return itemDiv; }
-        function renderCategoryNode(nD,nN,pE,cP){ if(!nD)return;const cD=document.createElement('div');cD.className='category-node border rounded-lg overflow-hidden mb-3';const cH=createCategoryHeaderElement(nN,cP); const cCo=document.createElement('div'); cCo.dataset.categoryPath = cP.join(','); cCo.className='category-content p-4 space-y-3'; const cSK=`category_${cP.join('_')}_collapsed`;const iC=localStorage.getItem(cSK)==='true';const tI=cH.querySelector('.toggle-icon');if(iC){cCo.classList.add('hidden');if(tI)tI.style.transform='rotate(-90deg)';}else{if(tI)tI.style.transform='rotate(0deg)';}cH.addEventListener('click',(e)=>{if(e.target.closest('.delete-category-btn'))return;const cHi=cCo.classList.toggle('hidden');localStorage.setItem(cSK,cHi);if(tI)tI.style.transform=cHi?'rotate(-90deg)':'rotate(0deg)';});cD.appendChild(cH);cD.appendChild(cCo);if(nD.items&&nD.items.length>0){nD.items.forEach(item=>{const iE=createItemElement(item,cP);cCo.appendChild(iE);});}if(nD.subcategories&&Object.keys(nD.subcategories).length>0){const sC=document.createElement('div');sC.className='subcategory-container mt-4 space-y-3';const sCN=Object.keys(nD.subcategories).sort();sCN.forEach(sCN=>{const nP=[...cP,sCN];renderCategoryNode(nD.subcategories[sCN],sCN,sC,nP);});cCo.appendChild(sC);}pE.appendChild(cD); }
+        function updateCategorySuggestions() { /* ... uændret ... */ const suggestions = new Set(); function collectPaths(node, currentPath) { const children = node.subcategories || node; const categoryNames = Object.keys(children); categoryNames.forEach(categoryName => { if (categoryName === 'items' || categoryName === 'subcategories') return; const childNode = children[categoryName]; if (typeof childNode !== 'object' || childNode === null) return; const newPath = currentPath ? [...currentPath, categoryName] : [categoryName]; suggestions.add(newPath.join(` ${CATEGORY_SEPARATOR} `)); if (childNode.subcategories) { collectPaths(childNode, newPath); } }); } collectPaths(appState.itemsTree, null); categorySuggestions.innerHTML = ''; suggestions.forEach(suggestion => { const option = document.createElement('option'); option.value = suggestion; categorySuggestions.appendChild(option); }); }
+        function displayItems() { const itemsTree=appState.itemsTree; categoryTreeContainer.innerHTML=''; const topLevelCategories=Object.keys(itemsTree).sort(); if(topLevelCategories.length===0){emptyMessage.classList.remove('hidden');return;}else{emptyMessage.classList.add('hidden');} topLevelCategories.forEach(categoryName=>{if(typeof itemsTree[categoryName]==='object'&&itemsTree[categoryName]!==null){renderCategoryNode(itemsTree[categoryName],categoryName,categoryTreeContainer,[categoryName]);}}); initItemSortable(); initCategorySortable(); }
+        function createCategoryHeaderElement(nodeName, currentPath) { /* ... uændret ... */ const categoryHeader = document.createElement('div'); categoryHeader.className = 'category-header p-3 flex justify-between items-center border-b'; const deleteCategoryButton = document.createElement('button'); deleteCategoryButton.className = 'delete-category-btn p-1 rounded-full mr-2'; deleteCategoryButton.title = `Slet hele kategorien '${nodeName}' og alt indhold`; deleteCategoryButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>`; deleteCategoryButton.dataset.categoryPath = currentPath.join(','); const headerContent = document.createElement('div'); headerContent.className = "flex items-center flex-grow min-w-0"; headerContent.appendChild(deleteCategoryButton); const titleElement = document.createElement('h3'); titleElement.className = "text-lg font-semibold truncate"; titleElement.textContent = nodeName; headerContent.appendChild(titleElement); const toggleIconContainer = document.createElement('div'); toggleIconContainer.className = "flex-shrink-0 ml-2"; toggleIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 toggle-icon"> <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /> </svg>`; categoryHeader.appendChild(headerContent); categoryHeader.appendChild(toggleIconContainer); return categoryHeader; }
+        function createItemElement(item, currentPath) { /* ... uændret ... */ const itemDiv = document.createElement('div'); itemDiv.dataset.itemId = item.id; itemDiv.className = `item-div item-added flex items-center justify-between p-2 rounded-md border ${item.packed ? 'packed' : ''}`; itemDiv.style.position = 'relative'; const itemInfo = document.createElement('div'); itemInfo.className = 'flex items-center space-x-3 flex-grow min-w-0'; if (item.quantity && item.quantity > 1) { const quantitySpan = document.createElement('span'); quantitySpan.className = 'item-quantity-prefix flex-shrink-0'; quantitySpan.textContent = `${item.quantity}x`; itemInfo.appendChild(quantitySpan); } if (item.image) { const img = document.createElement('img'); img.src = item.image; img.alt = item.name; img.className = 'item-image flex-shrink-0'; itemInfo.appendChild(img); } else { const placeholder = document.createElement('div'); placeholder.className = 'item-image-placeholder item-image flex-shrink-0 flex items-center justify-center rounded-md'; placeholder.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>`; itemInfo.appendChild(placeholder); } const itemNameElement = document.createElement('span'); itemNameElement.textContent = item.name; itemNameElement.className = `item-name truncate ${item.packed ? 'line-through' : ''}`; itemInfo.appendChild(itemNameElement); itemDiv.appendChild(itemInfo); const menuButton = document.createElement('button'); menuButton.className = 'item-action-menu-btn flex-shrink-0'; menuButton.title = 'Handlinger'; menuButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" /> </svg>`; menuButton.dataset.itemId = item.id; menuButton.dataset.itemPath = currentPath.join(','); itemDiv.appendChild(menuButton); const actionMenu = document.createElement('div'); actionMenu.className = 'item-action-menu hidden'; actionMenu.dataset.itemId = item.id; actionMenu.dataset.itemPath = currentPath.join(','); actionMenu.innerHTML = `<button class="action-pack w-full text-left" data-item-id="${item.id}" data-item-path="${currentPath.join(',')}">${item.packed ? 'Pak ud' : 'Pak'}</button><button class="action-edit w-full text-left" data-item-id="${item.id}" data-item-path="${currentPath.join(',')}">Rediger</button><button class="action-delete w-full text-left" data-item-id="${item.id}" data-item-path="${currentPath.join(',')}" data-item-name="${item.name}">Slet</button>`; itemDiv.appendChild(actionMenu); return itemDiv; }
+        function renderCategoryNode(nD,nN,pE,cP){ /* ... uændret ... */ if(!nD)return; const cD=document.createElement('div'); cD.dataset.categoryPath = cP.join(','); cD.className='category-node border rounded-lg overflow-hidden mb-3'; const cH=createCategoryHeaderElement(nN,cP); const cCo=document.createElement('div'); cCo.dataset.categoryPath = cP.join(','); cCo.className='category-content p-4 space-y-3'; const cSK=`category_${cP.join('_')}_collapsed`;const iC=localStorage.getItem(cSK)==='true';const tI=cH.querySelector('.toggle-icon');if(iC){cCo.classList.add('hidden');if(tI)tI.style.transform='rotate(-90deg)';}else{if(tI)tI.style.transform='rotate(0deg)';}cH.addEventListener('click',(e)=>{if(e.target.closest('.delete-category-btn'))return;const cHi=cCo.classList.toggle('hidden');localStorage.setItem(cSK,cHi);if(tI)tI.style.transform=cHi?'rotate(-90deg)':'rotate(0deg)';});cD.appendChild(cH);cD.appendChild(cCo); if(nD.items&&nD.items.length>0){nD.items.forEach(item=>{const iE=createItemElement(item,cP);cCo.appendChild(iE);});} const sC=document.createElement('div'); sC.className='subcategory-container mt-4 space-y-3'; sC.dataset.categoryPath = cP.join(','); if(nD.subcategories&&Object.keys(nD.subcategories).length>0){ const sCN=Object.keys(nD.subcategories).sort(); sCN.forEach(sCN=>{const nP=[...cP,sCN];renderCategoryNode(nD.subcategories[sCN],sCN,sC,nP);}); } cCo.appendChild(sC); pE.appendChild(cD); }
 
         // === Kernefunktionalitet: Tilføjelse & Redigering af Ting ===
         function handleImageUpload(imageFile, onImageReady, onError) { /* ... uændret ... */ if (!imageFile.type.startsWith('image/')) { onError('Ugyldig filtype. Vælg venligst et billede.'); return; } const maxSizeMB = 2; if (imageFile.size > maxSizeMB * 1024 * 1024) { onError(`Billedfil er for stor (maks ${maxSizeMB} MB).`); return; } const reader = new FileReader(); reader.onloadend = () => { onImageReady(reader.result); }; reader.onerror = () => { console.error("FileReader error:", reader.error); onError('Ukendt fejl ved indlæsning af billede.'); }; reader.readAsDataURL(imageFile); }
-        function startEditItem(item, itemPath) { hideError(); editingItemId = item.id; editingItemPath = itemPath; itemNameInput.value = item.name; itemQuantityInput.value = item.quantity || 1; itemCategoryInput.value = itemPath.join(` ${CATEGORY_SEPARATOR} `); itemCategoryInput.disabled = true; itemImageInput.disabled = false; itemImageInput.value = ''; shouldRemoveImage = false; if (item.image) { editImagePreview.src = item.image; editImagePreviewContainer.classList.remove('hidden'); } else { editImagePreviewContainer.classList.add('hidden'); } addItemBtn.innerHTML = 'Gem ændringer'; cancelEditBtn.classList.remove('hidden'); itemNameInput.focus(); }
-        function cancelEditItem() { editingItemId = null; editingItemPath = null; shouldRemoveImage = false; itemNameInput.value = ''; itemQuantityInput.value = '1'; itemCategoryInput.value = ''; itemImageInput.value = ''; itemCategoryInput.disabled = false; itemImageInput.disabled = false; editImagePreviewContainer.classList.add('hidden'); addItemBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /> </svg>Tilføj til kuffert`; cancelEditBtn.classList.add('hidden'); hideError(); }
-        function addItem() { hideError(); const name = itemNameInput.value.trim(); const quantityValue = itemQuantityInput.value; const imageFile = itemImageInput.files[0]; if (editingItemId !== null) { if (!name) { showError('Navn på ting må ikke være tomt.'); itemNameInput.focus(); return; } let newQuantity = parseInt(quantityValue, 10); if (isNaN(newQuantity) || newQuantity < 1) { showError("Antal skal være et positivt heltal."); itemQuantityInput.focus(); itemQuantityInput.value = 1; return; } const { node: categoryNode } = findNodeAndParent(appState.itemsTree, editingItemPath); if (categoryNode && categoryNode.items) { const itemToEdit = categoryNode.items.find(i => String(i.id) === String(editingItemId)); if (itemToEdit) { const finalizeEdit = () => { itemToEdit.name = name; itemToEdit.quantity = newQuantity; savePackedItems(); displayItems(); cancelEditItem(); }; if (imageFile) { handleImageUpload(imageFile, (imageDataUrl) => { itemToEdit.image = imageDataUrl; shouldRemoveImage = false; finalizeEdit(); }, (errorMessageText) => { showError(errorMessageText); }); } else if (shouldRemoveImage) { itemToEdit.image = null; shouldRemoveImage = false; finalizeEdit(); } else { finalizeEdit(); } } else { showError(`Kunne ikke finde tingen (ID: ${editingItemId}) der skulle redigeres.`); cancelEditItem(); } } else { showError(`Kunne ikke finde kategorien for tingen der skulle redigeres.`); cancelEditItem(); } } else { const categoryPathString = itemCategoryInput.value.trim(); if (!name) { showError('Navn på ting skal udfyldes.'); itemNameInput.focus(); return; } if (!categoryPathString) { showError('Kategori skal udfyldes.'); itemCategoryInput.focus(); return; } const categoryPath = parseCategoryPath(categoryPathString); if (categoryPath.length === 0) { showError('Ugyldigt kategori format (brug f.eks. Hovedkategori > Underkategori).'); itemCategoryInput.focus(); return; } let quantity = parseInt(quantityValue, 10); if (isNaN(quantity) || quantity < 1) { showError("Antal skal være et positivt heltal."); itemQuantityInput.focus(); itemQuantityInput.value = 1; return; } const newItem = { id: Date.now() + Math.random(), name: name, image: null, packed: false, quantity: quantity }; const targetNode = getOrCreateCategoryNode(appState.itemsTree, categoryPath); const finalizeAddItem = () => { targetNode.items.push(newItem); savePackedItems(); displayItems(); updateCategorySuggestions(); itemNameInput.value = ''; itemQuantityInput.value = '1'; itemCategoryInput.value = ''; itemImageInput.value = ''; itemNameInput.focus(); }; if (imageFile) { handleImageUpload(imageFile, (imageDataUrl) => { newItem.image = imageDataUrl; finalizeAddItem(); }, (errorMessageText) => { showError(errorMessageText); itemImageInput.value = ''; }); } else { finalizeAddItem(); } } }
+        function startEditItem(item, itemPath) { /* ... uændret ... */ hideError(); editingItemId = item.id; editingItemPath = itemPath; itemNameInput.value = item.name; itemQuantityInput.value = item.quantity || 1; itemCategoryInput.value = itemPath.join(` ${CATEGORY_SEPARATOR} `); itemCategoryInput.disabled = false; itemImageInput.disabled = false; itemImageInput.value = ''; shouldRemoveImage = false; if (item.image) { editImagePreview.src = item.image; editImagePreviewContainer.classList.remove('hidden'); } else { editImagePreviewContainer.classList.add('hidden'); } addItemBtn.innerHTML = 'Gem ændringer'; cancelEditBtn.classList.remove('hidden'); itemNameInput.focus(); }
+        function cancelEditItem() { /* ... uændret ... */ editingItemId = null; editingItemPath = null; shouldRemoveImage = false; itemNameInput.value = ''; itemQuantityInput.value = '1'; itemCategoryInput.value = ''; itemImageInput.value = ''; itemCategoryInput.disabled = false; itemImageInput.disabled = false; editImagePreviewContainer.classList.add('hidden'); addItemBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /> </svg>Tilføj til kuffert`; cancelEditBtn.classList.add('hidden'); hideError(); }
+        function addItem() { /* ... uændret ... */ hideError(); const name = itemNameInput.value.trim(); const quantityValue = itemQuantityInput.value; const categoryPathString = itemCategoryInput.value.trim(); const imageFile = itemImageInput.files[0]; if (editingItemId !== null) { if (!name) { showError('Navn på ting må ikke være tomt.'); itemNameInput.focus(); return; } let newQuantity = parseInt(quantityValue, 10); if (isNaN(newQuantity) || newQuantity < 1) { showError("Antal skal være et positivt heltal."); itemQuantityInput.focus(); itemQuantityInput.value = 1; return; } if (!categoryPathString) { showError('Kategori må ikke være tom ved redigering.'); itemCategoryInput.focus(); return; } const newPath = parseCategoryPath(categoryPathString); if (newPath.length === 0) { showError('Ugyldigt kategori format.'); itemCategoryInput.focus(); return; } const oldPath = editingItemPath; const pathChanged = JSON.stringify(newPath) !== JSON.stringify(oldPath); const updateItemData = (itemToUpdate, callback) => { itemToUpdate.name = name; itemToUpdate.quantity = newQuantity; if (imageFile) { handleImageUpload(imageFile, (imageDataUrl) => { itemToUpdate.image = imageDataUrl; shouldRemoveImage = false; callback(itemToUpdate); }, (errorMessageText) => { showError(errorMessageText); callback(itemToUpdate); }); } else if (shouldRemoveImage) { itemToUpdate.image = null; shouldRemoveImage = false; callback(itemToUpdate); } else { callback(itemToUpdate); } }; const { node: oldCategoryNode } = findNodeAndParent(appState.itemsTree, oldPath); if (!oldCategoryNode || !oldCategoryNode.items) { showError(`Intern fejl: Kunne ikke finde den oprindelige kategori for tingen.`); cancelEditItem(); return; } const itemIndex = oldCategoryNode.items.findIndex(i => String(i.id) === String(editingItemId)); if (itemIndex === -1) { showError(`Intern fejl: Kunne ikke finde tingen i den oprindelige kategori.`); cancelEditItem(); return; } const itemDataToMoveOrUpdate = { ...oldCategoryNode.items[itemIndex] }; updateItemData(itemDataToMoveOrUpdate, (updatedItemData) => { if (pathChanged) { oldCategoryNode.items.splice(itemIndex, 1); const newCategoryNode = getOrCreateCategoryNode(appState.itemsTree, newPath); if (!newCategoryNode.items) newCategoryNode.items = []; newCategoryNode.items.push(updatedItemData); updateCategorySuggestions(); } else { oldCategoryNode.items[itemIndex] = updatedItemData; } savePackedItems(); displayItems(); cancelEditItem(); }); } else { if (!name) { showError('Navn på ting skal udfyldes.'); itemNameInput.focus(); return; } if (!categoryPathString) { showError('Kategori skal udfyldes.'); itemCategoryInput.focus(); return; } const categoryPath = parseCategoryPath(categoryPathString); if (categoryPath.length === 0) { showError('Ugyldigt kategori format (brug f.eks. Hovedkategori > Underkategori).'); itemCategoryInput.focus(); return; } let quantity = parseInt(quantityValue, 10); if (isNaN(quantity) || quantity < 1) { showError("Antal skal være et positivt heltal."); itemQuantityInput.focus(); itemQuantityInput.value = 1; return; } const newItem = { id: Date.now() + Math.random(), name: name, image: null, packed: false, quantity: quantity }; const targetNode = getOrCreateCategoryNode(appState.itemsTree, categoryPath); const finalizeAddItem = () => { targetNode.items.push(newItem); savePackedItems(); displayItems(); updateCategorySuggestions(); itemNameInput.value = ''; itemQuantityInput.value = '1'; itemCategoryInput.value = ''; itemImageInput.value = ''; itemNameInput.focus(); }; if (imageFile) { handleImageUpload(imageFile, (imageDataUrl) => { newItem.image = imageDataUrl; finalizeAddItem(); }, (errorMessageText) => { showError(errorMessageText); itemImageInput.value = ''; }); } else { finalizeAddItem(); } } }
         function addCategoryToList(){ /* ... uændret ... */ hideError();const cPS=itemCategoryInput.value.trim();if(cPS){const cP=parseCategoryPath(cPS);if(cP.length===0){showError('Ugyldigt kategori format.');return;}const fP=cP.join(` ${CATEGORY_SEPARATOR} `);const eO=Array.from(categorySuggestions.options).map(o=>o.value);if(!eO.includes(fP)){const o=document.createElement('option');o.value=fP;categorySuggestions.appendChild(o);showAlertModal(`Stien "${fP}" er tilføjet til forslagslisten.`);itemCategoryInput.value='';}else{showAlertModal(`Stien "${fP}" findes allerede på forslagslisten.`);}}else{showError('Skriv en kategori/sti i kategorifeltet først for at tilføje den til listen.');itemCategoryInput.focus();}}
 
         // === Event Handlers for Sletning, Pakket Status & Redigering ===
@@ -202,79 +223,156 @@
         function handleTreeClick(event) { const targetElement = event.target; const deleteCategoryButton = targetElement.closest('.delete-category-btn'); if (deleteCategoryButton) { closeAllActionMenus(); handleCategoryDeleteClick(deleteCategoryButton); return; } const actionMenuButton = targetElement.closest('.item-action-menu-btn'); if (actionMenuButton) { const actionMenu = actionMenuButton.nextElementSibling; if (actionMenu && actionMenu.classList.contains('item-action-menu')) { const isHidden = actionMenu.classList.contains('hidden'); closeAllActionMenus(actionMenu); if (isHidden) { const itemId = actionMenu.dataset.itemId; const itemPath = actionMenu.dataset.itemPath.split(','); const { node: categoryNode } = findNodeAndParent(appState.itemsTree, itemPath); const item = categoryNode?.items?.find(i => String(i.id) === String(itemId)); const packButton = actionMenu.querySelector('.action-pack'); if(item && packButton) { packButton.textContent = item.packed ? 'Pak ud' : 'Pak'; } actionMenu.classList.remove('hidden'); } } return; } const clickedAction = targetElement.closest('.item-action-menu button'); if (clickedAction) { const actionMenuDiv = clickedAction.closest('.item-action-menu'); if (clickedAction.classList.contains('action-pack')) { handlePackedToggleClick(clickedAction); } else if (clickedAction.classList.contains('action-delete')) { handleItemDeleteClick(clickedAction); } else if (clickedAction.classList.contains('action-edit')) { const itemId = clickedAction.dataset.itemId; const itemPathString = clickedAction.dataset.itemPath; if (itemId && itemPathString) { const itemPath = itemPathString.split(','); const { node: categoryNode } = findNodeAndParent(appState.itemsTree, itemPath); if (categoryNode && categoryNode.items) { const item = categoryNode.items.find(i => String(i.id) === String(itemId)); if (item) { startEditItem(item, itemPath); } else { showError(`Kunne ikke finde tingen med ID ${itemId} for at redigere.`); } } else { showError(`Kunne ikke finde kategori '${itemPath.join(' > ')}' for at redigere.`); } } else { console.error("Mangler data-attributter på edit knap:", clickedAction); showError("Kunne ikke identificere elementet der skal redigeres."); } } if (actionMenuDiv) { actionMenuDiv.classList.add('hidden'); } return; } }
 
         // === Funktion: Generer Eksport Tekst ===
-        function generateExportText() { let exportString = "Cozy Kuffert Pakkeliste:\n=========================\n\n"; const indent = "  "; function traverse(node, currentIndent) { const categoryKeys = Object.keys(node).filter(k => k !== 'items' && k !== 'subcategories').sort(); categoryKeys.forEach(key => { const category = node[key]; exportString += `${currentIndent}📁 ${key}:\n`; if (category.items && category.items.length > 0) { category.items.forEach(item => { const packedMark = item.packed ? '[x]' : '[ ]'; const quantityPrefix = (item.quantity && item.quantity > 1) ? `${item.quantity}x ` : ''; exportString += `${currentIndent}${indent}${packedMark} ${quantityPrefix}${item.name}\n`; }); } if (category.subcategories) { traverse(category.subcategories, currentIndent + indent); } }); } traverse(appState.itemsTree, ''); return exportString; }
+        function generateExportText() { /* ... uændret ... */ let exportString = "Cozy Kuffert Pakkeliste:\n=========================\n\n"; const indent = "  "; function traverse(node, currentIndent) { const categoryKeys = Object.keys(node).filter(k => k !== 'items' && k !== 'subcategories').sort(); categoryKeys.forEach(key => { const category = node[key]; exportString += `${currentIndent}📁 ${key}:\n`; if (category.items && category.items.length > 0) { category.items.forEach(item => { const packedMark = item.packed ? '[x]' : '[ ]'; const quantityPrefix = (item.quantity && item.quantity > 1) ? `${item.quantity}x ` : ''; exportString += `${currentIndent}${indent}${packedMark} ${quantityPrefix}${item.name}\n`; }); } if (category.subcategories) { traverse(category.subcategories, currentIndent + indent); } }); } traverse(appState.itemsTree, ''); return exportString; }
 
-        // === Funktion: Generer Print HTML (Opdateret) ===
-        function generatePrintHtml() {
-            let printHtml = `
-                <!DOCTYPE html>
-                <html lang="da">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Cozy Kuffert - Pakkeliste</title>
-                    <style>
-                        body { font-family: sans-serif; line-height: 1.4; margin: 20px; }
-                        h1 { text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
-                        .category { margin-bottom: 15px; }
-                        .category-title { font-weight: bold; font-size: 1.1em; margin-bottom: 5px; }
-                        ul { list-style: none; padding-left: 20px; margin: 0; }
-                        li { margin-bottom: 5px; display: flex; align-items: center; min-height: 45px; /* Sørg for lidt højde */ }
-                        /* Rettet styling for packed-status */
-                        .packed-status { font-family: monospace; margin-right: 8px; display: inline-block; width: 1.5em; text-align: center; white-space: nowrap; /* Undgå linjeskift */ }
-                        /* Rettet styling for billede */
-                        .item-image-print { width: 40px; height: 40px; object-fit: cover; margin-right: 8px; vertical-align: middle; border-radius: 3px; border: 1px solid #eee; }
-                        .item-image-placeholder-print { display: inline-block; width: 40px; height: 40px; margin-right: 8px; vertical-align: middle; border: 1px dashed #eee; border-radius: 3px; line-height: 40px; text-align: center; color: #ccc; font-size: 0.8em; } /* Placeholder hvis intet billede */
-                        .quantity { font-weight: bold; margin-right: 5px; }
-                        .item-details { display: flex; flex-direction: column; /* Sæt navn på linje for sig */ justify-content: center; }
-                        .item-name-print { display: block; /* Sørg for at navn er på sin egen linje */ }
-                        .packed .item-name-print { text-decoration: line-through; color: #666; }
-                    </style>
-                </head>
-                <body>
-                    <h1>Cozy Kuffert - Pakkeliste</h1>
-            `;
-            const indentSpaces = "&nbsp;&nbsp;&nbsp;&nbsp;";
-
-            function traverse(node, level) {
-                const categoryKeys = Object.keys(node).filter(k => k !== 'items' && k !== 'subcategories').sort();
-                categoryKeys.forEach(key => {
-                    const category = node[key];
-                    printHtml += `<div class="category" style="margin-left: ${level * 20}px;">`;
-                    printHtml += `<div class="category-title">${key}</div>`;
-                    printHtml += `<ul>`;
-                    if (category.items && category.items.length > 0) {
-                        category.items.forEach(item => {
-                            const packedMark = item.packed ? '[x]' : '[ ]';
-                            const quantityPrefix = (item.quantity && item.quantity > 1) ? `<span class="quantity">${item.quantity}x</span>` : '';
-                            // Vis billede hvis det findes, ellers en tom boks
-                            const imageTag = item.image
-                                ? `<img src="${item.image}" alt="" class="item-image-print">`
-                                : '<span class="item-image-placeholder-print"></span>';
-                            printHtml += `<li class="${item.packed ? 'packed' : ''}">
-                                            <span class="packed-status">${packedMark}</span>
-                                            ${imageTag}
-                                            <div class="item-details">
-                                                ${quantityPrefix}
-                                                <span class="item-name-print">${item.name}</span>
-                                            </div>
-                                         </li>`;
-                        });
-                    }
-                    printHtml += `</ul>`;
-                    if (category.subcategories) { traverse(category.subcategories, level + 1); }
-                    printHtml += `</div>`;
-                });
-            }
-            traverse(appState.itemsTree, 0);
-            printHtml += `</body></html>`;
-            return printHtml;
-        }
+        // === Funktion: Generer Print HTML ===
+        function generatePrintHtml() { /* ... uændret ... */ let printHtml = ` <!DOCTYPE html> <html lang="da"> <head> <meta charset="UTF-8"> <title>Cozy Kuffert - Pakkeliste</title> <style> body { font-family: sans-serif; line-height: 1.4; margin: 20px; } h1 { text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; } .category { margin-bottom: 15px; } .category-title { font-weight: bold; font-size: 1.1em; margin-bottom: 5px; } ul { list-style: none; padding-left: 20px; margin: 0; } li { margin-bottom: 5px; display: flex; align-items: center; min-height: 45px; } .packed-status { font-family: monospace; margin-right: 8px; display: inline-block; width: 1.5em; text-align: center; white-space: nowrap; } .item-image-print { width: 40px; height: 40px; object-fit: cover; margin-right: 8px; vertical-align: middle; border-radius: 3px; border: 1px solid #eee; } .item-image-placeholder-print { display: inline-block; width: 40px; height: 40px; margin-right: 8px; vertical-align: middle; border: 1px dashed #eee; border-radius: 3px; line-height: 40px; text-align: center; color: #ccc; font-size: 0.8em; } .quantity { font-weight: bold; margin-right: 5px; } .item-details { display: flex; flex-direction: column; justify-content: center; } .item-name-print { display: block; } .packed .item-name-print { text-decoration: line-through; color: #666; } </style> </head> <body> <h1>Cozy Kuffert - Pakkeliste</h1> `; const indentSpaces = "&nbsp;&nbsp;&nbsp;&nbsp;"; function traverse(node, level) { const categoryKeys = Object.keys(node).filter(k => k !== 'items' && k !== 'subcategories').sort(); categoryKeys.forEach(key => { const category = node[key]; printHtml += `<div class="category" style="margin-left: ${level * 20}px;">`; printHtml += `<div class="category-title">${key}</div>`; printHtml += `<ul>`; if (category.items && category.items.length > 0) { category.items.forEach(item => { const packedMark = item.packed ? '[x]' : '[ ]'; const quantityPrefix = (item.quantity && item.quantity > 1) ? `<span class="quantity">${item.quantity}x</span>` : ''; const imageTag = item.image ? `<img src="${item.image}" alt="" class="item-image-print">` : '<span class="item-image-placeholder-print"></span>'; printHtml += `<li class="${item.packed ? 'packed' : ''}"> <span class="packed-status">${packedMark}</span> ${imageTag} <div class="item-details"> ${quantityPrefix} <span class="item-name-print">${item.name}</span> </div> </li>`; }); } printHtml += `</ul>`; if (category.subcategories) { traverse(category.subcategories, level + 1); } printHtml += `</div>`; }); } traverse(appState.itemsTree, 0); printHtml += `</body></html>`; return printHtml; }
 
         // === Funktion: Håndter Item Drop (Træk-og-slip) ===
-        function handleItemDrop(event) { const movedItemElement = event.item; const targetListElement = event.to; const sourceListElement = event.from; const oldIndex = event.oldIndex; const newIndex = event.newIndex; const itemId = movedItemElement.dataset.itemId; const sourcePathString = sourceListElement.dataset.categoryPath; const targetPathString = targetListElement.dataset.categoryPath; if (!itemId || !sourcePathString || !targetPathString) { console.error("Fejl ved drop: Mangler data-attributter på item eller lister."); showError("Der skete en fejl under flytningen (manglende data)."); displayItems(); return; } const sourcePath = sourcePathString.split(','); const targetPath = targetPathString.split(','); console.log(`Flytter item ${itemId} fra [${sourcePath.join(' > ')}] index ${oldIndex} til [${targetPath.join(' > ')}] index ${newIndex}`); let movedItemData = null; const { node: sourceNode } = findNodeAndParent(appState.itemsTree, sourcePath); if (!sourceNode || !sourceNode.items) { console.error("Kunne ikke finde source node eller dens items:", sourcePath, sourceNode); showError("Fejl under flytning (kunne ikke finde kildekategori)."); displayItems(); return; } const itemIndexInSource = sourceNode.items.findIndex(i => String(i.id) === String(itemId)); if (itemIndexInSource > -1) { movedItemData = sourceNode.items.splice(itemIndexInSource, 1)[0]; } else { console.error(`Kunne ikke finde item med ID ${itemId} i source node:`, sourceNode.items); showError("Fejl under flytning (kunne ikke finde element i kildedata)."); displayItems(); return; } const { node: targetNode } = findNodeAndParent(appState.itemsTree, targetPath); if (!targetNode || !targetNode.items) { console.error("Kunne ikke finde target node eller dens items:", targetPath, targetNode); showError("Fejl under flytning (kunne ikke finde målkategori)."); sourceNode.items.splice(itemIndexInSource, 0, movedItemData); displayItems(); return; } targetNode.items.splice(newIndex, 0, movedItemData); savePackedItems(); updateCategorySuggestions(); displayItems(); console.log("Item flyttet, state gemt, og listen gen-tegnet."); }
+        function handleItemDrop(event) { /* ... uændret ... */ const movedItemElement = event.item; const targetListElement = event.to; const sourceListElement = event.from; const oldIndex = event.oldIndex; const newIndex = event.newIndex; const itemId = movedItemElement.dataset.itemId; const sourcePathString = sourceListElement.dataset.categoryPath; const targetPathString = targetListElement.dataset.categoryPath; if (!itemId || !sourcePathString || !targetPathString) { console.error("Fejl ved drop: Mangler data-attributter på item eller lister."); showError("Der skete en fejl under flytningen (manglende data)."); displayItems(); return; } const sourcePath = sourcePathString.split(','); const targetPath = targetPathString.split(','); console.log(`Flytter item ${itemId} fra [${sourcePath.join(' > ')}] index ${oldIndex} til [${targetPath.join(' > ')}] index ${newIndex}`); let movedItemData = null; const { node: sourceNode } = findNodeAndParent(appState.itemsTree, sourcePath); if (!sourceNode || !sourceNode.items) { console.error("Kunne ikke finde source node eller dens items:", sourcePath, sourceNode); showError("Fejl under flytning (kunne ikke finde kildekategori)."); displayItems(); return; } const itemIndexInSource = sourceNode.items.findIndex(i => String(i.id) === String(itemId)); if (itemIndexInSource > -1) { movedItemData = sourceNode.items.splice(itemIndexInSource, 1)[0]; } else { console.error(`Kunne ikke finde item med ID ${itemId} i source node:`, sourceNode.items); showError("Fejl under flytning (kunne ikke finde element i kildedata)."); displayItems(); return; } const { node: targetNode } = findNodeAndParent(appState.itemsTree, targetPath); if (!targetNode || !targetNode.items) { console.error("Kunne ikke finde target node eller dens items:", targetPath, targetNode); showError("Fejl under flytning (kunne ikke finde målkategori)."); sourceNode.items.splice(itemIndexInSource, 0, movedItemData); displayItems(); return; } targetNode.items.splice(newIndex, 0, movedItemData); savePackedItems(); updateCategorySuggestions(); displayItems(); console.log("Item flyttet, state gemt, og listen gen-tegnet."); }
 
-         // === Funktion: Initialiser Træk-og-slip ===
-         function initSortable() { document.querySelectorAll('.category-content').forEach(container => { if (!container.sortableInstance) { if(container.dataset.categoryPath) { container.sortableInstance = new Sortable(container, { animation: 150, group: 'shared-items', draggable: '.item-div', filter: '.item-action-menu-btn, .item-action-menu', preventOnFilter: true, onEnd: handleItemDrop }); } } }); }
+         // === Funktion: Initialiser Træk-og-slip for ITEMS ===
+         function initItemSortable() { /* ... uændret ... */ document.querySelectorAll('.category-content').forEach(container => { if (!container.sortableInstanceItems) { if(container.dataset.categoryPath) { container.sortableInstanceItems = new Sortable(container, { animation: 150, group: 'shared-items', draggable: '.item-div', filter: '.item-action-menu-btn, .item-action-menu', preventOnFilter: true, onEnd: handleItemDrop }); } } }); }
+
+         // === Funktion: Initialiser Træk-og-slip for KATEGORIER (Opdateret med onMove/onEnd) ===
+         function initCategorySortable() {
+             const categoryContainers = [
+                 document.getElementById('categoryTreeContainer'),
+                 ...document.querySelectorAll('.subcategory-container')
+             ];
+
+             categoryContainers.forEach(container => {
+                 if (!container || container.sortableInstanceCategories) return;
+
+                 const isRoot = container.id === 'categoryTreeContainer';
+                 const hasPath = container.dataset.categoryPath !== undefined;
+
+                 if (isRoot || hasPath) {
+                     container.sortableInstanceCategories = new Sortable(container, {
+                         animation: 150,
+                         group: 'shared-categories',
+                         draggable: '.category-node',
+                         filter: '.category-content, .delete-category-btn, .toggle-icon',
+                         preventOnFilter: true,
+                         onStart: function(evt) {
+                            // Ryd evt. gammel highlight når nyt træk starter
+                             if (currentDropTarget) {
+                                 currentDropTarget.classList.remove('drop-target-active');
+                                 currentDropTarget = null;
+                             }
+                         },
+                         onMove: function (evt) {
+                             const potentialTarget = evt.related.closest('#categoryTreeContainer, .subcategory-container');
+
+                             if (potentialTarget && potentialTarget !== currentDropTarget) {
+                                 if (currentDropTarget) {
+                                     currentDropTarget.classList.remove('drop-target-active');
+                                 }
+                                 potentialTarget.classList.add('drop-target-active');
+                                 currentDropTarget = potentialTarget;
+
+                             } else if (!potentialTarget && currentDropTarget) {
+                                 currentDropTarget.classList.remove('drop-target-active');
+                                 currentDropTarget = null;
+                             }
+                             // Forhindre drop ind i sig selv
+                             return evt.related !== evt.dragged && !evt.dragged.contains(evt.related);
+                         },
+                         onEnd: function (evt) { // Wrapper onEnd
+                             if (currentDropTarget) {
+                                 currentDropTarget.classList.remove('drop-target-active');
+                                 currentDropTarget = null;
+                             }
+                             handleCategoryDrop(evt); // Kald den faktiske data-håndtering
+                         }
+                     });
+                 }
+             });
+         }
+
+
+         // === Funktion: Håndter Kategori Drop (Trin 3+4: Opdater Data) ===
+         function handleCategoryDrop(event) {
+             const movedElement = event.item; const targetContainer = event.to; const sourceContainer = event.from; const oldIndex = event.oldIndex; const newIndex = event.newIndex;
+             const movedCategoryPathString = movedElement.dataset.categoryPath; const movedCategoryPath = movedCategoryPathString ? movedCategoryPathString.split(',') : null;
+             let targetParentPath = null;
+             if (targetContainer.id === 'categoryTreeContainer') { targetParentPath = []; }
+             else if (targetContainer.classList.contains('subcategory-container')) { const targetContainerPathString = targetContainer.dataset.categoryPath; targetParentPath = targetContainerPathString ? targetContainerPathString.split(',') : null; }
+
+             if (!movedCategoryPath || targetParentPath === null) { console.error("Fejl ved kategori drop: Kunne ikke bestemme stier.", { movedCategoryPath, targetParentPath }); showError("Fejl: Kunne ikke identificere kategoriens nye placering."); displayItems(); return; }
+
+             console.log('--- Category Drop Event ---');
+             console.log('Flyttet Kategori Sti:', movedCategoryPath);
+             console.log('Mål Forælder Sti:', targetParentPath);
+             console.log('Ny Index:', newIndex);
+             console.log('---------------------------');
+
+             // --- Trin 3 & 4: Opdater data og gem ---
+             const success = moveCategoryInData(movedCategoryPath, targetParentPath);
+
+             if (success) {
+                 savePackedItems();
+                 updateCategorySuggestions();
+                 displayItems(); // Gen-tegn med den nye struktur
+                 console.log("Kategori flyttet i data, gemt og vist.");
+             } else {
+                 showError("Kunne ikke flytte mappen (fejl i dataopdatering eller ugyldig flytning). Handlingen annulleret.");
+                 displayItems(); // Nulstil visuel ændring ved fejl
+             }
+         }
+
+         // === Funktion: Flyt Kategori i Data ===
+         function moveCategoryInData(movedCategoryPath, targetParentPath) {
+             if (!movedCategoryPath || movedCategoryPath.length === 0 || targetParentPath === null) { console.error("moveCategoryInData: Ugyldige stier modtaget."); return false; }
+
+             // Check for at undgå at droppe ind i sig selv eller en underkategori
+             const targetPathString = targetParentPath.join(',');
+             const movedPathString = movedCategoryPath.join(',');
+             // Tjek om target starter med moved path OG ikke er den samme sti (hvis target er en underkategori)
+             if (targetPathString.startsWith(movedPathString) && targetPathString !== movedCategoryPath.slice(0,-1).join(',')) {
+                  console.error("moveCategoryInData: Forsøg på at flytte en kategori ind i sig selv eller en underkategori.");
+                  return false;
+             }
+
+             const movedKey = movedCategoryPath[movedCategoryPath.length - 1];
+             const sourcePath = movedCategoryPath.slice(0, -1);
+
+             // Find kilde forælder node
+             let sourceParentNode;
+             if (sourcePath.length === 0) { sourceParentNode = appState.itemsTree; }
+             else { const { node } = findNodeAndParent(appState.itemsTree, sourcePath); sourceParentNode = node; }
+             if (!sourceParentNode) { console.error("moveCategoryInData: Kunne ikke finde kilde-forælder.", sourcePath); return false; }
+
+             // Find mål forælder node
+             let targetParentNode;
+             if (targetParentPath.length === 0) { targetParentNode = appState.itemsTree; }
+             else { const { node } = findNodeAndParent(appState.itemsTree, targetParentPath); targetParentNode = node; }
+             if (!targetParentNode) { console.error("moveCategoryInData: Kunne ikke finde mål-forælder.", targetParentPath); return false; }
+
+             // Hent den flyttede node data og slet fra kilde
+             let movedNodeData;
+             if (sourcePath.length === 0) {
+                 if (!sourceParentNode[movedKey]) { console.error(`Kilde nøgle ${movedKey} findes ikke i roden.`); return false; }
+                 movedNodeData = sourceParentNode[movedKey];
+                 delete sourceParentNode[movedKey];
+             } else {
+                 if (!sourceParentNode.subcategories || !sourceParentNode.subcategories[movedKey]) { console.error(`Kilde nøgle ${movedKey} findes ikke i subcategories for ${sourcePath.join('>')}.`); return false; }
+                 movedNodeData = sourceParentNode.subcategories[movedKey];
+                 delete sourceParentNode.subcategories[movedKey];
+             }
+
+             // Tilføj til mål
+             if (targetParentPath.length === 0) {
+                 targetParentNode[movedKey] = movedNodeData;
+             } else {
+                 if (!targetParentNode.subcategories) { targetParentNode.subcategories = {}; }
+                 targetParentNode.subcategories[movedKey] = movedNodeData;
+             }
+
+             console.log(`Moved category '${movedKey}' data successfully.`);
+             return true;
+         }
+
 
         // === Event Listeners ===
         addItemBtn.addEventListener('click', addItem);
@@ -285,20 +383,7 @@
         removeImageBtn.addEventListener('click', () => { shouldRemoveImage = true; editImagePreviewContainer.classList.add('hidden'); itemImageInput.value = ''; });
         exportBtn.addEventListener('click', () => { const exportText = generateExportText(); exportTextArea.value = exportText; showExportModal(); });
         copyExportBtn.addEventListener('click', () => { navigator.clipboard.writeText(exportTextArea.value).then(() => { const originalText = copyExportBtn.textContent; copyExportBtn.textContent = 'Kopieret!'; setTimeout(() => { copyExportBtn.textContent = originalText; }, 1500); }).catch(err => { console.error('Fejl ved kopiering: ', err); showAlertModal('Kunne ikke kopiere teksten automatisk. Prøv manuelt.'); }); });
-        // Opdateret Print Knap Listener
-        printPageBtn.addEventListener('click', () => {
-            const printHtml = generatePrintHtml();
-            const printWindow = window.open('', '_blank');
-            if(printWindow) {
-                printWindow.document.write(printHtml);
-                printWindow.document.close();
-                printWindow.focus();
-                setTimeout(() => { printWindow.print(); }, 500);
-                hideExportModal();
-            } else {
-                showAlertModal('Kunne ikke åbne print-vindue. Tillad pop-ups for denne side.');
-            }
-        });
+        printPageBtn.addEventListener('click', () => { const printHtml = generatePrintHtml(); const printWindow = window.open('', '_blank'); if(printWindow) { printWindow.document.write(printHtml); printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); }, 500); hideExportModal(); } else { showAlertModal('Kunne ikke åbne print-vindue. Tillad pop-ups for denne side.'); } });
         closeExportBtn.addEventListener('click', hideExportModal);
         exportModal.addEventListener('click', (e) => { if (e.target === exportModal) hideExportModal(); });
 
