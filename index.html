@@ -52,7 +52,7 @@
         /* --- Kuffert Indhold & Kategori Styling --- */
         #suitcaseContent h2 { color: #9d174d; border-bottom: none; margin-bottom: 0; }
         #emptyMessage { color: #fda4af; }
-        .category-node { border-color: #fce7f3; box-shadow: 0 1px 3px rgba(219, 112, 147, 0.05); margin-bottom: 0.75rem; cursor: grab; }
+        .category-node { border-color: #fce7f3; box-shadow: 0 1px 3px rgba(219, 112, 147, 0.05); margin-bottom: 0.75rem; cursor: grab; transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; /* Tilføj transition for scale/shadow */ }
         .category-node:active { cursor: grabbing; }
         .category-header { background-image: linear-gradient(to bottom, #ffffff, #fdf2f8); border-bottom-color: #fce7f3; cursor: pointer; user-select: none; transition: background-color 0.2s ease; }
         .category-header:hover { background-image: linear-gradient(to bottom, #fdf2f8, #fce7f3); }
@@ -66,7 +66,7 @@
         .subcategory-container .subcategory-container { margin-left: 0.75rem; padding-left: 0.75rem; }
 
         /* --- Item Styling --- */
-        .item-div { border-color: #fce7f3; background-color: #ffffff; transition: opacity 0.3s ease; position: relative; cursor: grab; }
+        .item-div { border-color: #fce7f3; background-color: #ffffff; transition: opacity 0.3s ease, transform 0.2s ease-out, box-shadow 0.2s ease-out; /* Tilføj transition for scale/shadow */ position: relative; cursor: grab; }
         .item-div:active { cursor: grabbing; }
         .item-div.packed { opacity: 0.6; }
         .item-div.packed .item-name { text-decoration: line-through; }
@@ -84,23 +84,32 @@
         .item-action-menu button:hover { background-color: #fdf2f8; }
 
         /* --- SortableJS Styling --- */
-        .sortable-drag { opacity: 0.9 !important; }
+        /* Styling for det element der trækkes */
+        .item-div.sortable-drag,
+        .category-node.sortable-drag {
+            opacity: 0.9 !important; /* Lidt gennemsigtig */
+            transform: scale(1.03); /* Lidt større */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* Tydeligere skygge */
+            z-index: 100; /* Sørg for at den er øverst */
+            cursor: grabbing;
+        }
+        /* Ghost for Items (placeholder hvor item kan lande) */
         .item-div.sortable-ghost { opacity: 0.4; background: #fbcfe8; }
+        /* Ghost for Categories (placeholder hvor kategori kan lande) */
         .category-node.sortable-ghost { background: #fdf2f8; border: 2px dashed #f9a8d4; opacity: 0.6; height: 40px; overflow: hidden; margin-bottom: 0.75rem; box-shadow: none; cursor: grabbing; border-radius: 0.375rem; }
         .category-node.sortable-ghost > * { display: none; }
+        /* Highlight for Drop Zone */
         #categoryTreeContainer.drop-target-active { background-color: #fef6fa !important; box-shadow: inset 0 0 0 2px rgba(244, 114, 182, 0.3); }
         .subcategory-container.drop-target-active { background-color: #fce7f3 !important; border-left-color: transparent; box-shadow: inset 0 0 0 2px rgba(236, 72, 153, 0.4); }
 
-        /* NYT: Shake Animation */
-        @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-2px); }
-            50% { transform: translateX(2px); }
-            75% { transform: translateX(-1px); }
-            100% { transform: translateX(0); }
+        /* NYT: Quick Rotate Animation */
+        @keyframes quick-rotate {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-2deg); } /* Lille rotation */
+            100% { transform: rotate(0deg); }
         }
-        .is-shaking {
-            animation: shake 0.4s ease-in-out; /* Lidt kortere end 0.5s for at føles hurtig */
+        .is-rotating {
+            animation: quick-rotate 0.2s ease-in-out; /* Meget kort varighed */
         }
 
 
@@ -289,7 +298,7 @@
 
         // === Event Handlers for Sletning, Pakket Status & Redigering ===
         function handleItemDeleteClick(deleteButton) { /* ... uændret ... */ const itemId = deleteButton.dataset.itemId; const itemPathString = deleteButton.dataset.itemPath; const itemName = deleteButton.dataset.itemName; if (itemId && itemPathString && itemName) { const itemPath = itemPathString.split(','); showConfirmationModal( `Er du sikker på, du vil slette "${itemName}" fra kategorien "${itemPath.join(` ${CATEGORY_SEPARATOR} `)}"?`, () => { const { parent: cPN, node: cN, key: cK } = findNodeAndParent(appState.itemsTree, itemPath); if (!cN) { showError(`Kunne ikke finde kategori '${itemPath.join(' > ')}' under sletning.`); return; } if (cN.items) { const iI = cN.items.findIndex(i => String(i.id) === String(itemId)); if (iI > -1) { cN.items.splice(iI, 1); const sK = cN.subcategories ? Object.keys(cN.subcategories) : []; if (cN.items.length === 0 && sK.length === 0 && cPN && cK) { if (cPN === appState.itemsTree) { delete cPN[cK]; } else if (cPN.subcategories) { delete cPN.subcategories[cK]; } localStorage.removeItem(`category_${itemPath.join('_')}_collapsed`); } savePackedItems(); displayItems(); updateCategorySuggestions(); updateTotalWeightDisplay(); } else { showError(`Kunne ikke finde tingen med ID ${itemId} i kategorien.`); } } else { showError(`Kategorien '${itemPath.join(' > ')}' mangler en item-liste.`); } }); } else { console.error("Mangler data attr på item slet:", deleteButton); showError("Kunne ikke identificere elementet der skal slettes (manglende data)."); } }
-        function handleCategoryDeleteClick(deleteButton) { /* ... uændret ... */ const categoryPathString = deleteButton.dataset.categoryPath; if (categoryPathString) { const categoryPath = categoryPathString.split(','); const categoryName = categoryPath[categoryPath.length - 1]; showConfirmationModal( `Er du sikker på, du vil slette kat. "${categoryName}" (${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}) og alt indhold? Kan ikke fortrydes.`, () => { const treeBeforeDelete = JSON.parse(JSON.stringify(appState.itemsTree)); const { parent: parentNode, node: nodeToDelete, key: nodeKey } = findNodeAndParent(appState.itemsTree, categoryPath); if (!nodeToDelete) { showError(`Kunne ikke finde kategori "${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}" til sletning.`); return; } if (parentNode === appState.itemsTree) { delete parentNode[nodeKey]; } else if (parentNode && parentNode.subcategories) { delete parentNode.subcategories[nodeKey]; } else { showError(`Kunne ikke finde forælder til kategori "${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}" under sletning.`); return; } removeCollapseStatesRecursive(treeBeforeDelete, categoryPath); savePackedItems(); displayItems(); updateCategorySuggestions(); updateTotalWeightDisplay(); }); } else { console.error("Mangler data-cat-path:", deleteButton); showError("Kunne ikke identificere kategorien der skal slettes (manglende data)."); } }
+        function handleCategoryDeleteClick(deleteButton) { /* ... uændret ... */ const categoryPathString = deleteButton.dataset.categoryPath; if (categoryPathString) { const categoryPath = categoryPathString.split(','); const categoryName = categoryPath[categoryPath.length - 1]; showConfirmationModal( `Er du sikker på, du vil slette kat. "${categoryName}" (${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}) og alt indhold? Kan ikke fortrydes.`, () => { const treeBeforeDelete = JSON.parse(JSON.stringify(appState.itemsTree)); const { parent: parentNode, node: nodeToDelete, key: nodeKey } = findNodeAndParent(appState.itemsTree, categoryPath); if (!nodeToDelete) { showError(`Kunne ikke finde kategori "${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}" til sletning.`); return; } if (parentNode === appState.itemsTree) { delete parentNode[nodeKey]; } else if (parentNode && parentNode.subcategories) { delete parentNode.subcategories[nodeKey]; } else { showError(`Kunne ikke finde forælder til kategori "${categoryPath.join(` ${CATEGORY_SEPARATOR} `)}" under sletning.`); return; } removeCollapseStatesRecursive(treeBeforeDelete, categoryPath); savePackedItems(); displayItems(); updateCategorySuggestions(); updateTotalWeightDisplay(); }); } else { console.error("Mangler data-cat-path:", deleteCategoryButton); showError("Kunne ikke identificere kategorien der skal slettes (manglende data)."); } }
         function handlePackedToggleClick(toggleElement) { /* ... uændret ... */ const itemId = toggleElement.dataset.itemId; const itemPathString = toggleElement.dataset.itemPath; if (itemId && itemPathString) { const itemPath = itemPathString.split(','); const { node: categoryNode } = findNodeAndParent(appState.itemsTree, itemPath); if (categoryNode && categoryNode.items) { const item = categoryNode.items.find(i => String(i.id) === String(itemId)); if (item) { item.packed = !item.packed; savePackedItems(); displayItems(); updateTotalWeightDisplay(); } else { showError(`Kunne ikke finde tingen med ID ${itemId} for at opdatere pakket-status.`); } } else { showError(`Kunne ikke finde kategori '${itemPath.join(' > ')}' for at opdatere pakket-status.`); } } else { console.error("Mangler data-attributter på packed toggle element:", toggleElement); showError("Kunne ikke identificere elementet for at ændre pakket-status."); } }
 
         // === Central Event Handler for Træ-Klik (inkl. Action Menu) ===
@@ -304,8 +313,8 @@
 
         // === Funktion: Håndter Item Drop (Træk-og-slip) ===
         function handleItemDrop(event) {
-            // Fjern ryste-klasse hvis den stadig er der (burde ikke ske, men for en sikkerheds skyld)
-             event.item.classList.remove('is-shaking');
+            // Fjern rotations-klasse hvis den stadig er der
+             event.item.classList.remove('is-rotating');
              /* ... resten af funktionen uændret ... */ const movedItemElement = event.item; const targetListElement = event.to; const sourceListElement = event.from; const oldIndex = event.oldIndex; const newIndex = event.newIndex; const itemId = movedItemElement.dataset.itemId; const sourcePathString = sourceListElement.dataset.categoryPath; const targetPathString = targetListElement.dataset.categoryPath; if (!itemId || !sourcePathString || !targetPathString) { console.error("Fejl ved drop: Mangler data-attributter på item eller lister."); showError("Der skete en fejl under flytningen (manglende data)."); displayItems(); return; } const sourcePath = sourcePathString.split(','); const targetPath = targetPathString.split(','); console.log(`Flytter item ${itemId} fra [${sourcePath.join(' > ')}] index ${oldIndex} til [${targetPath.join(' > ')}] index ${newIndex}`); let movedItemData = null; const { node: sourceNode } = findNodeAndParent(appState.itemsTree, sourcePath); if (!sourceNode || !sourceNode.items) { console.error("Kunne ikke finde source node eller dens items:", sourcePath, sourceNode); showError("Fejl under flytning (kunne ikke finde kildekategori)."); displayItems(); return; } const itemIndexInSource = sourceNode.items.findIndex(i => String(i.id) === String(itemId)); if (itemIndexInSource > -1) { movedItemData = sourceNode.items.splice(itemIndexInSource, 1)[0]; } else { console.error(`Kunne ikke finde item med ID ${itemId} i source node:`, sourceNode.items); showError("Fejl under flytning (kunne ikke finde element i kildedata)."); displayItems(); return; } const { node: targetNode } = findNodeAndParent(appState.itemsTree, targetPath); if (!targetNode || !targetNode.items) { console.error("Kunne ikke finde target node eller dens items:", targetPath, targetNode); showError("Fejl under flytning (kunne ikke finde målkategori)."); sourceNode.items.splice(itemIndexInSource, 0, movedItemData); displayItems(); return; } targetNode.items.splice(newIndex, 0, movedItemData); savePackedItems(); updateCategorySuggestions(); displayItems(); console.log("Item flyttet, state gemt, og listen gen-tegnet.");
         }
 
@@ -322,12 +331,12 @@
                             preventOnFilter: true,
                             delay: 150,
                             delayOnTouchOnly: true,
-                            onStart: function(evt) { // NYT: Tilføj ryste-klasse
-                                evt.item.classList.add('is-shaking');
+                            onStart: function(evt) { // Tilføj rotations-klasse
+                                evt.item.classList.add('is-rotating');
                             },
-                            onEnd: function(evt) { // NYT: Sørg for at fjerne ryste-klasse
-                                evt.item.classList.remove('is-shaking');
-                                handleItemDrop(evt); // Kald den oprindelige handler
+                            onEnd: function(evt) { // Fjern rotations-klasse
+                                evt.item.classList.remove('is-rotating');
+                                handleItemDrop(evt);
                             }
                         });
                     }
@@ -358,12 +367,12 @@
                          delay: 150,
                          delayOnTouchOnly: true,
                          onStart: function(evt) {
-                             evt.item.classList.add('is-shaking'); // NYT
+                             evt.item.classList.add('is-rotating'); // Tilføj rotations-klasse
                              if (currentDropTarget) { currentDropTarget.classList.remove('drop-target-active'); currentDropTarget = null; }
                          },
                          onMove: function (evt) { const potentialTarget = evt.related.closest('#categoryTreeContainer, .subcategory-container'); if (potentialTarget && potentialTarget !== currentDropTarget) { if (currentDropTarget) { currentDropTarget.classList.remove('drop-target-active'); } potentialTarget.classList.add('drop-target-active'); currentDropTarget = potentialTarget; } else if (!potentialTarget && currentDropTarget) { currentDropTarget.classList.remove('drop-target-active'); currentDropTarget = null; } return evt.related !== evt.dragged && !evt.dragged.contains(evt.related); },
                          onEnd: function (evt) {
-                             evt.item.classList.remove('is-shaking'); // NYT: Fjern ryste-klasse
+                             evt.item.classList.remove('is-rotating'); // Fjern rotations-klasse
                              if (currentDropTarget) { currentDropTarget.classList.remove('drop-target-active'); currentDropTarget = null; }
                              handleCategoryDrop(evt);
                          }
@@ -374,7 +383,7 @@
 
          // === Funktion: Håndter Kategori Drop (Trin 3+4: Opdater Data) ===
          function handleCategoryDrop(event) {
-             event.item.classList.remove('is-shaking'); // Ekstra sikkerhed for at fjerne klassen
+             event.item.classList.remove('is-rotating'); // Ekstra sikkerhed
              /* ... resten uændret ... */ const movedElement = event.item; const targetContainer = event.to; const sourceContainer = event.from; const oldIndex = event.oldIndex; const newIndex = event.newIndex; const movedCategoryPathString = movedElement.dataset.categoryPath; const movedCategoryPath = movedCategoryPathString ? movedCategoryPathString.split(',') : null; let targetParentPath = null; if (targetContainer.id === 'categoryTreeContainer') { targetParentPath = []; } else if (targetContainer.classList.contains('subcategory-container')) { const targetContainerPathString = targetContainer.dataset.categoryPath; targetParentPath = targetContainerPathString ? targetContainerPathString.split(',') : null; } if (!movedCategoryPath || targetParentPath === null) { console.error("Fejl ved kategori drop: Kunne ikke bestemme stier.", { movedCategoryPath, targetParentPath }); showError("Fejl: Kunne ikke identificere kategoriens nye placering."); displayItems(); return; } console.log('--- Category Drop Event ---'); console.log('Flyttet Kategori Sti:', movedCategoryPath); console.log('Mål Forælder Sti:', targetParentPath); console.log('Ny Index:', newIndex); console.log('---------------------------'); const success = moveCategoryInData(movedCategoryPath, targetParentPath); if (success) { savePackedItems(); updateCategorySuggestions(); displayItems(); console.log("Kategori flyttet i data, gemt og vist."); } else { showError("Kunne ikke flytte mappen (fejl i dataopdatering eller ugyldig flytning). Handlingen annulleret."); displayItems(); }
         }
 
