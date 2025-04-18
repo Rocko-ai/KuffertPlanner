@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cozy Kuffert</title>
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" href="briefcase.jpeg">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
@@ -16,7 +16,7 @@
         .main-container { background-color: #ffffff; border: 1px solid #fbcfe8; box-shadow: 0 4px 15px rgba(219, 112, 147, 0.1); position: relative; /* Nødvendig for menu positionering */ }
         .main-title { color: #be185d; text-shadow: 1px 1px 2px rgba(219, 112, 147, 0.1); }
 
-        /* --- Tilføj/Rediger Form Styling --- */
+        /* --- Tilføj/Rediger Form Styling med Transition --- */
         #addEditFormContainer { background-color: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 0.5rem; padding: 1rem; margin-bottom: 2rem; overflow: hidden; opacity: 0; transform: scale(0); transform-origin: top right; height: auto; max-height: 0; transition: transform 0.3s ease-out, opacity 0.3s ease-out, max-height 0.3s cubic-bezier(0, 1, 0, 1); visibility: hidden; transition: transform 0.3s ease-out, opacity 0.3s ease-out, max-height 0.3s cubic-bezier(0, 1, 0, 1), visibility 0s linear 0.3s; }
         #addEditFormContainer.active { opacity: 1; transform: scale(1); max-height: 1000px; visibility: visible; transition: transform 0.3s ease-out, opacity 0.3s ease-out, max-height 0.3s cubic-bezier(1, 0, 1, 0), visibility 0s linear 0s; }
         .add-item-title { color: #9d174d; }
@@ -42,7 +42,7 @@
         #mainMenuBtn { background-color: #fce7f3; border: 1px solid #f9a8d4; color: #be185d; padding: 0.5rem; border-radius: 0.375rem; }
         #mainMenuBtn:hover { background-color: #fbcfe8; }
         #mainMenuDropdown { position: absolute; top: 100%; right: 0; background-color: white; border-radius: 0.375rem; border: 1px solid #fbcfe8; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); z-index: 50; min-width: 200px; padding: 0.5rem 0; margin-top: 0.25rem; }
-        .main-menu-item { display: flex; align-items: center; gap: 0.75rem; /* Mellemrum ikon/tekst */ padding: 0.5rem 1rem; font-size: 0.875rem; color: #831843; background: none; border: none; cursor: pointer; width: 100%; text-align: left; }
+        .main-menu-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; font-size: 0.875rem; color: #831843; background: none; border: none; cursor: pointer; width: 100%; text-align: left; }
         .main-menu-item svg { width: 1rem; height: 1rem; flex-shrink: 0; }
         .main-menu-item:hover { background-color: #fdf2f8; }
 
@@ -115,12 +115,41 @@
         .modal-button-ok:hover { background-image: linear-gradient(to right, #818cf8, #6366f1); box-shadow: 0 2px 5px rgba(0,0,0,0.15); }
         #exportTextArea { font-family: monospace; font-size: 0.875rem; line-height: 1.5; border: 1px solid #fbcfe8; background-color: #fdf2f8; min-height: 200px; }
 
+        /* NYT: Toast Notifikation Styling */
+        #toastNotification {
+            position: fixed;
+            bottom: 1rem; /* 16px */
+            left: 50%;
+            transform: translateX(-50%) translateY(100%); /* Start nedenfor */
+            background-color: #d1fae5; /* bg-green-100 */
+            color: #065f46; /* text-green-800 */
+            padding: 0.75rem 1rem; /* py-3 px-4 */
+            border-radius: 0.375rem; /* rounded-md */
+            border: 1px solid #6ee7b7; /* border-green-300 */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+            font-size: 0.875rem; /* text-sm */
+            z-index: 60; /* Sørg for at den er over andre ting */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out, visibility 0s linear 0.3s;
+            display: flex; /* For ikon + tekst */
+            align-items: center;
+            gap: 0.5rem; /* Mellemrum ikon/tekst */
+        }
+        #toastNotification.active {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0); /* Slutposition */
+            visibility: visible;
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out, visibility 0s linear 0s;
+        }
+
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <div class="main-container max-w-4xl mx-auto p-6 rounded-lg">
-        <div id="headerContainer" class="flex justify-between items-center mb-6 relative"> <h1 class="main-title text-3xl font-bold text-center flex-grow">Cozy Kuffert</h1>
+        <div id="headerContainer" class="flex justify-between items-center mb-6 relative">
+             <h1 class="main-title text-3xl font-bold text-center flex-grow">Cozy Kuffert</h1>
              <button id="mainMenuBtn" title="Menu">
                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                      <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -128,21 +157,15 @@
              </button>
              <div id="mainMenuDropdown" class="hidden">
                  <button id="exportPrintMenuItem" class="main-menu-item">
-                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                         <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0M12 12.75h.008v.008H12v-.008Z" />
-                     </svg>
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0M12 12.75h.008v.008H12v-.008Z" /> </svg>
                      Eksportér / Print...
                  </button>
                  <button id="saveToFileMenuItem" class="main-menu-item">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                      </svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /> </svg>
                      Gem til Fil...
                  </button>
                  <button id="loadFromFileMenuItem" class="main-menu-item">
-                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                     </svg>
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /> </svg>
                      Hent fra Fil...
                  </button>
              </div>
@@ -195,6 +218,14 @@
     <div id="alertModal" class="modal-overlay"><div class="modal-box"><h3 id="alertModalTitle" class="modal-title">Besked</h3><p id="alertModalMessage" class="modal-message">Dette er en besked.</p><div class="modal-buttons"><button id="alertOkBtn" class="modal-button modal-button-ok">OK</button></div></div></div>
     <div id="exportModal" class="modal-overlay"> <div class="modal-box w-full max-w-lg"> <h3 class="modal-title">Eksportér Pakkeliste</h3> <textarea id="exportTextArea" readonly class="w-full p-2 border rounded-md mb-4"></textarea> <div class="modal-buttons"> <button id="copyExportBtn" class="modal-button modal-button-ok">Kopier Tekst</button> <button id="printPageBtn" class="modal-button modal-button-ok">Print Side</button> <button id="closeExportBtn" class="modal-button modal-button-cancel">Luk</button> </div> </div> </div>
 
+    <div id="toastNotification">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+        <span id="toastMessage"></span>
+    </div>
+
+
     <script>
         // === Konstanter ===
         const PACKED_ITEMS_KEY = 'packedItemsTree';
@@ -206,19 +237,13 @@
         const itemNameInput = document.getElementById('itemName'); const itemQuantityInput = document.getElementById('itemQuantity'); const itemCategoryInput = document.getElementById('itemCategory'); const itemImageInput = document.getElementById('itemImage'); const itemWeightInput = document.getElementById('itemWeight');
         const addItemBtn = document.getElementById('addItemBtn'); const addCategoryBtn = document.getElementById('addCategoryBtn'); const suitcaseContent = document.getElementById('suitcaseContent'); const categoryTreeContainer = document.getElementById('categoryTreeContainer'); const categorySuggestions = document.getElementById('categorySuggestions'); const errorMessage = document.getElementById('errorMessage'); const emptyMessage = document.getElementById('emptyMessage'); const confirmationModal = document.getElementById('confirmationModal'); const confirmationModalTitle = document.getElementById('confirmationModalTitle'); const confirmationModalMessage = document.getElementById('confirmationModalMessage'); const confirmCancelBtn = document.getElementById('confirmCancelBtn'); const confirmOkBtn = document.getElementById('confirmOkBtn'); const alertModal = document.getElementById('alertModal'); const alertModalTitle = document.getElementById('alertModalTitle'); const alertModalMessage = document.getElementById('alertModalMessage'); const alertOkBtn = document.getElementById('alertOkBtn');
         const cancelEditBtn = document.getElementById('cancelEditBtn');
-        // const exportBtn = document.getElementById('exportBtn'); // Fjernet
         const exportModal = document.getElementById('exportModal'); const exportTextArea = document.getElementById('exportTextArea'); const copyExportBtn = document.getElementById('copyExportBtn'); const printPageBtn = document.getElementById('printPageBtn'); const closeExportBtn = document.getElementById('closeExportBtn');
         const editImagePreviewContainer = document.getElementById('editImagePreviewContainer'); const editImagePreview = document.getElementById('editImagePreview'); const removeImageBtn = document.getElementById('removeImageBtn');
         const toggleFormBtn = document.getElementById('toggleFormBtn'); const addEditFormContainer = document.getElementById('addEditFormContainer');
         const totalPackedWeightDisplay = document.getElementById('totalPackedWeightDisplay');
-        // NYE Menu elementer
-        const mainMenuBtn = document.getElementById('mainMenuBtn');
-        const mainMenuDropdown = document.getElementById('mainMenuDropdown');
-        const exportPrintMenuItem = document.getElementById('exportPrintMenuItem');
-        const saveToFileMenuItem = document.getElementById('saveToFileMenuItem');
-        const loadFromFileMenuItem = document.getElementById('loadFromFileMenuItem');
-        const loadFileInput = document.getElementById('loadFileInput');
-
+        const mainMenuBtn = document.getElementById('mainMenuBtn'); const mainMenuDropdown = document.getElementById('mainMenuDropdown'); const exportPrintMenuItem = document.getElementById('exportPrintMenuItem'); const saveToFileMenuItem = document.getElementById('saveToFileMenuItem'); const loadFromFileMenuItem = document.getElementById('loadFromFileMenuItem'); const loadFileInput = document.getElementById('loadFileInput');
+        const toastNotification = document.getElementById('toastNotification'); // NYT
+        const toastMessage = document.getElementById('toastMessage'); // NYT
 
         // === App State ===
         let appState = { itemsTree: {} };
@@ -226,6 +251,7 @@
         let editingItemPath = null;
         let shouldRemoveImage = false;
         let currentDropTarget = null;
+        let toastTimeout = null; // NYT: Til toast timer
 
         // === Hjælpefunktioner (UI & Sti Parsing) ===
         function showError(message) { console.error("Fejl vist til bruger:", message); errorMessage.textContent = `Fejl: ${message}`; errorMessage.classList.remove('hidden'); }
@@ -246,8 +272,24 @@
         function hideConfirmationModal() { confirmationModal.classList.remove('active'); confirmCallback = null; cancelCallback = null; }
         function showAlertModal(m, t = "Besked") { alertModalTitle.textContent = t; alertModalMessage.textContent = m; alertModal.classList.add('active'); }
         function hideAlertModal() { alertModal.classList.remove('active'); }
-        function showExportModal() { const exportText = generateExportText(); exportTextArea.value = exportText; exportModal.classList.add('active'); } // Opdateret til at generere tekst her
+        function showExportModal() { const exportText = generateExportText(); exportTextArea.value = exportText; exportModal.classList.add('active'); }
         function hideExportModal() { exportModal.classList.remove('active'); }
+
+        // === NY Toast Notifikation Logik ===
+        function showToast(message) {
+            if (!toastNotification || !toastMessage) return;
+            toastMessage.textContent = message;
+            toastNotification.classList.add('active'); // Viser og starter animation
+
+            // Ryd eksisterende timer hvis den findes
+            if (toastTimeout) { clearTimeout(toastTimeout); }
+
+            // Start ny timer til at skjule igen
+            toastTimeout = setTimeout(() => {
+                toastNotification.classList.remove('active');
+                toastTimeout = null;
+            }, 2500); // Skjul efter 2.5 sekunder
+        }
 
         // === DOM Opdatering ===
         function updateCategorySuggestions() { /* ... uændret ... */ const suggestions = new Set(); function collectPaths(node, currentPath) { const children = node.subcategories || node; const categoryNames = Object.keys(children); categoryNames.forEach(categoryName => { if (categoryName === 'items' || categoryName === 'subcategories') return; const childNode = children[categoryName]; if (typeof childNode !== 'object' || childNode === null) return; const newPath = currentPath ? [...currentPath, categoryName] : [categoryName]; suggestions.add(newPath.join(` ${CATEGORY_SEPARATOR} `)); if (childNode.subcategories) { collectPaths(childNode, newPath); } }); } collectPaths(appState.itemsTree, null); categorySuggestions.innerHTML = ''; suggestions.forEach(suggestion => { const option = document.createElement('option'); option.value = suggestion; categorySuggestions.appendChild(option); }); }
@@ -261,7 +303,7 @@
         function resetFormFields() { /* ... uændret ... */ itemNameInput.value = ''; itemQuantityInput.value = '1'; itemCategoryInput.value = ''; itemImageInput.value = ''; itemWeightInput.value = ''; editImagePreviewContainer.classList.add('hidden'); shouldRemoveImage = false; hideError(); }
         function startEditItem(item, itemPath) { /* ... uændret ... */ hideError(); editingItemId = item.id; editingItemPath = itemPath; itemNameInput.value = item.name; itemQuantityInput.value = item.quantity || 1; itemCategoryInput.value = itemPath.join(` ${CATEGORY_SEPARATOR} `); itemWeightInput.value = item.weight !== null && item.weight !== undefined ? item.weight : ''; itemCategoryInput.disabled = false; itemImageInput.disabled = false; itemWeightInput.disabled = false; itemImageInput.value = ''; shouldRemoveImage = false; if (item.image) { editImagePreview.src = item.image; editImagePreviewContainer.classList.remove('hidden'); } else { editImagePreviewContainer.classList.add('hidden'); } addItemBtn.innerHTML = 'Gem ændringer'; cancelEditBtn.classList.remove('hidden'); addEditFormContainer.classList.add('active'); toggleFormBtn.innerHTML = ICON_X; toggleFormBtn.title = 'Luk formular'; itemNameInput.focus(); }
         function cancelEditItem() { /* ... uændret ... */ resetFormFields(); editingItemId = null; editingItemPath = null; addItemBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /> </svg>Tilføj til kuffert`; cancelEditBtn.classList.add('hidden'); addEditFormContainer.classList.remove('active'); toggleFormBtn.innerHTML = ICON_PLUS; toggleFormBtn.title = 'Tilføj ny ting'; }
-        function addItem() { /* ... uændret ... */ hideError(); const name = itemNameInput.value.trim(); const quantityValue = itemQuantityInput.value; const categoryPathString = itemCategoryInput.value.trim(); const imageFile = itemImageInput.files[0]; const weightValue = itemWeightInput.value.trim(); let weight = null; if (weightValue !== '') { weight = parseFloat(weightValue.replace(',', '.')); if (isNaN(weight) || weight < 0) { showError("Vægt skal være et positivt tal (eller tomt)."); itemWeightInput.focus(); return; } } if (editingItemId !== null) { if (!name) { showError('Navn på ting må ikke være tomt.'); itemNameInput.focus(); return; } let newQuantity = parseInt(quantityValue, 10); if (isNaN(newQuantity) || newQuantity < 1) { showError("Antal skal være et positivt heltal."); itemQuantityInput.focus(); itemQuantityInput.value = 1; return; } if (!categoryPathString) { showError('Kategori må ikke være tom ved redigering.'); itemCategoryInput.focus(); return; } const newPath = parseCategoryPath(categoryPathString); if (newPath.length === 0) { showError('Ugyldigt kategori format.'); itemCategoryInput.focus(); return; } const oldPath = editingItemPath; const pathChanged = JSON.stringify(newPath) !== JSON.stringify(oldPath); const updateItemData = (itemToUpdate, callback) => { itemToUpdate.name = name; itemToUpdate.quantity = newQuantity; itemToUpdate.weight = weight; if (imageFile) { handleImageUpload(imageFile, (imageDataUrl) => { itemToUpdate.image = imageDataUrl; shouldRemoveImage = false; callback(itemToUpdate); }, (errorMessageText) => { showError(errorMessageText); callback(itemToUpdate); }); } else if (shouldRemoveImage) { itemToUpdate.image = null; shouldRemoveImage = false; callback(itemToUpdate); } else { callback(itemToUpdate); } }; const { node: oldCategoryNode } = findNodeAndParent(appState.itemsTree, oldPath); if (!oldCategoryNode || !oldCategoryNode.items) { showError(`Intern fejl: Kunne ikke finde den oprindelige kategori.`); cancelEditItem(); return; } const itemIndex = oldCategoryNode.items.findIndex(i => String(i.id) === String(editingItemId)); if (itemIndex === -1) { showError(`Intern fejl: Kunne ikke finde tingen.`); cancelEditItem(); return; } const itemDataToMoveOrUpdate = { ...oldCategoryNode.items[itemIndex] }; updateItemData(itemDataToMoveOrUpdate, (updatedItemData) => { if (pathChanged) { oldCategoryNode.items.splice(itemIndex, 1); const newCategoryNode = getOrCreateCategoryNode(appState.itemsTree, newPath); if (!newCategoryNode.items) newCategoryNode.items = []; newCategoryNode.items.push(updatedItemData); updateCategorySuggestions(); } else { oldCategoryNode.items[itemIndex] = updatedItemData; } savePackedItems(); displayItems(); cancelEditItem(); }); } else { if (!name) { showError('Navn på ting skal udfyldes.'); itemNameInput.focus(); return; } if (!categoryPathString) { showError('Kategori skal udfyldes.'); itemCategoryInput.focus(); return; } const categoryPath = parseCategoryPath(categoryPathString); if (categoryPath.length === 0) { showError('Ugyldigt kategori format.'); itemCategoryInput.focus(); return; } let quantity = parseInt(quantityValue, 10); if (isNaN(quantity) || quantity < 1) { showError("Antal skal være et positivt heltal."); itemQuantityInput.focus(); itemQuantityInput.value = 1; return; } const newItem = { id: Date.now() + Math.random(), name: name, image: null, packed: false, quantity: quantity, weight: weight }; const targetNode = getOrCreateCategoryNode(appState.itemsTree, categoryPath); const finalizeAddItem = () => { targetNode.items.push(newItem); savePackedItems(); displayItems(); updateCategorySuggestions(); resetFormFields(); itemNameInput.focus(); }; if (imageFile) { handleImageUpload(imageFile, (imageDataUrl) => { newItem.image = imageDataUrl; finalizeAddItem(); }, (errorMessageText) => { showError(errorMessageText); itemImageInput.value = ''; }); } else { finalizeAddItem(); } } }
+        function addItem() { hideError(); const name = itemNameInput.value.trim(); const quantityValue = itemQuantityInput.value; const categoryPathString = itemCategoryInput.value.trim(); const imageFile = itemImageInput.files[0]; const weightValue = itemWeightInput.value.trim(); let weight = null; if (weightValue !== '') { weight = parseFloat(weightValue.replace(',', '.')); if (isNaN(weight) || weight < 0) { showError("Vægt skal være et positivt tal (eller tomt)."); itemWeightInput.focus(); return; } } if (editingItemId !== null) { if (!name) { showError('Navn på ting må ikke være tomt.'); itemNameInput.focus(); return; } let newQuantity = parseInt(quantityValue, 10); if (isNaN(newQuantity) || newQuantity < 1) { showError("Antal skal være et positivt heltal."); itemQuantityInput.focus(); itemQuantityInput.value = 1; return; } if (!categoryPathString) { showError('Kategori må ikke være tom ved redigering.'); itemCategoryInput.focus(); return; } const newPath = parseCategoryPath(categoryPathString); if (newPath.length === 0) { showError('Ugyldigt kategori format.'); itemCategoryInput.focus(); return; } const oldPath = editingItemPath; const pathChanged = JSON.stringify(newPath) !== JSON.stringify(oldPath); const updateItemData = (itemToUpdate, callback) => { itemToUpdate.name = name; itemToUpdate.quantity = newQuantity; itemToUpdate.weight = weight; if (imageFile) { handleImageUpload(imageFile, (imageDataUrl) => { itemToUpdate.image = imageDataUrl; shouldRemoveImage = false; callback(itemToUpdate); }, (errorMessageText) => { showError(errorMessageText); callback(itemToUpdate); }); } else if (shouldRemoveImage) { itemToUpdate.image = null; shouldRemoveImage = false; callback(itemToUpdate); } else { callback(itemToUpdate); } }; const { node: oldCategoryNode } = findNodeAndParent(appState.itemsTree, oldPath); if (!oldCategoryNode || !oldCategoryNode.items) { showError(`Intern fejl: Kunne ikke finde den oprindelige kategori.`); cancelEditItem(); return; } const itemIndex = oldCategoryNode.items.findIndex(i => String(i.id) === String(editingItemId)); if (itemIndex === -1) { showError(`Intern fejl: Kunne ikke finde tingen.`); cancelEditItem(); return; } const itemDataToMoveOrUpdate = { ...oldCategoryNode.items[itemIndex] }; updateItemData(itemDataToMoveOrUpdate, (updatedItemData) => { if (pathChanged) { oldCategoryNode.items.splice(itemIndex, 1); const newCategoryNode = getOrCreateCategoryNode(appState.itemsTree, newPath); if (!newCategoryNode.items) newCategoryNode.items = []; newCategoryNode.items.push(updatedItemData); updateCategorySuggestions(); } else { oldCategoryNode.items[itemIndex] = updatedItemData; } savePackedItems(); displayItems(); cancelEditItem(); }); } else { if (!name) { showError('Navn på ting skal udfyldes.'); itemNameInput.focus(); return; } if (!categoryPathString) { showError('Kategori skal udfyldes.'); itemCategoryInput.focus(); return; } const categoryPath = parseCategoryPath(categoryPathString); if (categoryPath.length === 0) { showError('Ugyldigt kategori format.'); itemCategoryInput.focus(); return; } let quantity = parseInt(quantityValue, 10); if (isNaN(quantity) || quantity < 1) { showError("Antal skal være et positivt heltal."); itemQuantityInput.focus(); itemQuantityInput.value = 1; return; } const newItem = { id: Date.now() + Math.random(), name: name, image: null, packed: false, quantity: quantity, weight: weight }; const targetNode = getOrCreateCategoryNode(appState.itemsTree, categoryPath); const finalizeAddItem = () => { targetNode.items.push(newItem); savePackedItems(); displayItems(); updateCategorySuggestions(); resetFormFields(); itemNameInput.focus(); showToast(" Ting tilføjet!"); /* Vis toast */ }; if (imageFile) { handleImageUpload(imageFile, (imageDataUrl) => { newItem.image = imageDataUrl; finalizeAddItem(); }, (errorMessageText) => { showError(errorMessageText); itemImageInput.value = ''; }); } else { finalizeAddItem(); } } }
         function addCategoryToList(){ /* ... uændret ... */ hideError();const cPS=itemCategoryInput.value.trim();if(cPS){const cP=parseCategoryPath(cPS);if(cP.length===0){showError('Ugyldigt kategori format.');return;}const fP=cP.join(` ${CATEGORY_SEPARATOR} `);const eO=Array.from(categorySuggestions.options).map(o=>o.value);if(!eO.includes(fP)){const o=document.createElement('option');o.value=fP;categorySuggestions.appendChild(o);showAlertModal(`Stien "${fP}" er tilføjet til forslagslisten.`);itemCategoryInput.value='';}else{showAlertModal(`Stien "${fP}" findes allerede på forslagslisten.`);}}else{showError('Skriv en kategori/sti i kategorifeltet først for at tilføje den til listen.');itemCategoryInput.focus();}}
 
         // === Event Handlers for Sletning, Pakket Status & Redigering ===
@@ -302,40 +344,22 @@
 
 
         // === Event Listeners ===
-        addItemBtn.addEventListener('click', addItem); // Kalder updateTotalWeightDisplay via displayItems
+        addItemBtn.addEventListener('click', addItem); // Kalder showToast internt nu
         cancelEditBtn.addEventListener('click', cancelEditItem);
         addCategoryBtn.addEventListener('click', addCategoryToList);
         itemNameInput.addEventListener('keypress', (e)=>{if(e.key==='Enter'){if(itemCategoryInput.value.trim() || editingItemId !== null){addItem();}else{itemCategoryInput.focus();}}});
         itemCategoryInput.addEventListener('keypress', (e)=>{if(e.key==='Enter'){if(itemNameInput.value.trim()){addItem();}else{itemNameInput.focus();}}});
         removeImageBtn.addEventListener('click', () => { shouldRemoveImage = true; editImagePreviewContainer.classList.add('hidden'); itemImageInput.value = ''; });
-        // exportBtn.addEventListener('click', showExportModal); // Fjernet - erstattet af menu
+        // exportBtn.addEventListener('click', showExportModal); // Fjernet
         copyExportBtn.addEventListener('click', () => { navigator.clipboard.writeText(exportTextArea.value).then(() => { const originalText = copyExportBtn.textContent; copyExportBtn.textContent = 'Kopieret!'; setTimeout(() => { copyExportBtn.textContent = originalText; }, 1500); }).catch(err => { console.error('Fejl ved kopiering: ', err); showAlertModal('Kunne ikke kopiere teksten automatisk. Prøv manuelt.'); }); });
         printPageBtn.addEventListener('click', () => { const printHtml = generatePrintHtml(); const printWindow = window.open('', '_blank'); if(printWindow) { printWindow.document.write(printHtml); printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); }, 500); hideExportModal(); } else { showAlertModal('Kunne ikke åbne print-vindue. Tillad pop-ups for denne side.'); } });
         closeExportBtn.addEventListener('click', hideExportModal);
         exportModal.addEventListener('click', (e) => { if (e.target === exportModal) hideExportModal(); });
         toggleFormBtn.addEventListener('click', () => { const isActive = addEditFormContainer.classList.contains('active'); if (!isActive) { resetFormFields(); editingItemId = null; editingItemPath = null; addItemBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"> <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /> </svg>Tilføj til kuffert`; cancelEditBtn.classList.add('hidden'); itemCategoryInput.disabled = false; itemImageInput.disabled = false; itemWeightInput.disabled = false; addEditFormContainer.classList.add('active'); toggleFormBtn.innerHTML = ICON_X; toggleFormBtn.title = 'Luk formular'; itemNameInput.focus(); } else { cancelEditItem(); } });
-
-        // --- NYE Listeners for Menu ---
-        mainMenuBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Undgå at body click lukker med det samme
-            mainMenuDropdown.classList.toggle('hidden');
-        });
-
-        exportPrintMenuItem.addEventListener('click', () => {
-            showExportModal();
-            mainMenuDropdown.classList.add('hidden');
-        });
-
-        saveToFileMenuItem.addEventListener('click', () => {
-            saveToFile();
-            mainMenuDropdown.classList.add('hidden');
-        });
-
-        loadFromFileMenuItem.addEventListener('click', () => {
-            loadFileInput.click(); // Åbn filvælger
-            mainMenuDropdown.classList.add('hidden');
-        });
-
+        mainMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); mainMenuDropdown.classList.toggle('hidden'); }); // Toggle menu
+        exportPrintMenuItem.addEventListener('click', () => { showExportModal(); mainMenuDropdown.classList.add('hidden'); });
+        saveToFileMenuItem.addEventListener('click', () => { saveToFile(); mainMenuDropdown.classList.add('hidden'); });
+        loadFromFileMenuItem.addEventListener('click', () => { loadFileInput.click(); mainMenuDropdown.classList.add('hidden'); });
         loadFileInput.addEventListener('change', loadFromFile);
 
 
@@ -350,97 +374,21 @@
             alertModal.addEventListener('click', (e) => { if (e.target === alertModal) hideAlertModal(); });
             // Central Træ Listener
             categoryTreeContainer.addEventListener('click', handleTreeClick);
-            // Global Listener til at lukke dropdowns (menu og action)
+            // Global Listener til at lukke dropdowns
             document.addEventListener('click', (event) => {
-                // Luk item action menu
-                if (!event.target.closest('.item-action-menu') && !event.target.closest('.item-action-menu-btn')) {
-                    closeAllActionMenus();
-                }
-                // Luk main dropdown menu
-                if (!event.target.closest('#mainMenuBtn') && !event.target.closest('#mainMenuDropdown')) {
-                   mainMenuDropdown.classList.add('hidden');
-                }
+                 if (!event.target.closest('.item-action-menu') && !event.target.closest('.item-action-menu-btn')) { closeAllActionMenus(); }
+                 if (!event.target.closest('#mainMenuBtn') && !event.target.closest('#mainMenuDropdown')) { mainMenuDropdown.classList.add('hidden'); }
             });
             // Start App
             displayItems();
             updateCategorySuggestions();
         });
 
-        // === NY Funktion: Gem til Fil ===
-        function saveToFile() {
-            try {
-                const dataToSave = appState.itemsTree;
-                const jsonString = JSON.stringify(dataToSave, null, 2); // Pretty print
-                const blob = new Blob([jsonString], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                // Foreslå filnavn med dato
-                const dateStamp = new Date().toISOString().slice(0, 10);
-                link.download = `cozy-kuffert-${dateStamp}.json`;
-                document.body.appendChild(link); // Nødvendigt for Firefox
-                link.click();
-                document.body.removeChild(link); // Ryd op
-                // Frigiv URL efter kort tid
-                setTimeout(() => URL.revokeObjectURL(url), 100);
-                showAlertModal("Pakkeliste gemt som fil.", "Succes");
-            } catch (error) {
-                console.error("Fejl ved gem til fil:", error);
-                showError("Kunne ikke gemme pakkelisten som fil.");
-            }
-        }
+        // === Funktion: Gem til Fil ===
+        function saveToFile() { /* ... uændret ... */ try { const dataToSave = appState.itemsTree; const jsonString = JSON.stringify(dataToSave, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; const dateStamp = new Date().toISOString().slice(0, 10); link.download = `cozy-kuffert-${dateStamp}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); setTimeout(() => URL.revokeObjectURL(url), 100); showAlertModal("Pakkeliste gemt som fil.", "Succes"); } catch (error) { console.error("Fejl ved gem til fil:", error); showError("Kunne ikke gemme pakkelisten som fil."); } }
 
-        // === NY Funktion: Hent fra Fil ===
-        function loadFromFile(event) {
-            const file = event.target.files[0];
-            if (!file) {
-                return; // Ingen fil valgt
-            }
-
-            const reader = new FileReader();
-
-            reader.onload = (e) => {
-                try {
-                    const loadedData = JSON.parse(e.target.result);
-
-                    // Simpel validering: Er det et objekt?
-                    if (typeof loadedData !== 'object' || loadedData === null || Array.isArray(loadedData)) {
-                        throw new Error("Filen indeholder ikke gyldige kuffert-data (ikke et objekt).");
-                    }
-                    // TODO: Mere avanceret validering af strukturen kunne tilføjes her
-
-                    // Vis bekræftelse før overskrivning
-                    showConfirmationModal(
-                        `Er du sikker på, du vil indlæse "${file.name}"? Den nuværende pakkeliste i browseren vil blive overskrevet.`,
-                        () => { // onConfirm
-                            appState.itemsTree = loadedData;
-                            savePackedItems(); // Gem den nye state til localStorage
-                            displayItems(); // Opdater UI
-                            updateCategorySuggestions(); // Opdater forslag
-                            showAlertModal(`Pakkeliste "${file.name}" indlæst!`, "Succes");
-                        },
-                        () => { // onCancel
-                            showAlertModal("Indlæsning afbrudt.", "Info");
-                        }
-                    );
-
-                } catch (error) {
-                    console.error("Fejl ved indlæsning/parsing af fil:", error);
-                    showError(`Kunne ikke indlæse filen. Er det en gyldig JSON-fil genereret af Cozy Kuffert? Fejl: ${error.message}`);
-                } finally {
-                    // Nulstil input så samme fil kan vælges igen
-                    event.target.value = null;
-                }
-            };
-
-            reader.onerror = (e) => {
-                console.error("Fejl ved læsning af fil:", e);
-                showError("Der opstod en fejl under læsning af filen.");
-                event.target.value = null; // Nulstil input
-            };
-
-            reader.readAsText(file);
-        }
+        // === Funktion: Hent fra Fil ===
+        function loadFromFile(event) { /* ... uændret ... */ const file = event.target.files[0]; if (!file) { return; } const reader = new FileReader(); reader.onload = (e) => { try { const loadedData = JSON.parse(e.target.result); if (typeof loadedData !== 'object' || loadedData === null || Array.isArray(loadedData)) { throw new Error("Filen indeholder ikke gyldige kuffert-data (ikke et objekt)."); } showConfirmationModal( `Er du sikker på, du vil indlæse "${file.name}"? Den nuværende pakkeliste i browseren vil blive overskrevet.`, () => { appState.itemsTree = loadedData; savePackedItems(); displayItems(); updateCategorySuggestions(); showAlertModal(`Pakkeliste "${file.name}" indlæst!`, "Succes"); }, () => { showAlertModal("Indlæsning afbrudt.", "Info"); } ); } catch (error) { console.error("Fejl ved indlæsning/parsing af fil:", error); showError(`Kunne ikke indlæse filen. Er det en gyldig JSON-fil genereret af Cozy Kuffert? Fejl: ${error.message}`); } finally { event.target.value = null; } }; reader.onerror = (e) => { console.error("Fejl ved læsning af fil:", e); showError("Der opstod en fejl under læsning af filen."); event.target.value = null; }; reader.readAsText(file); }
 
     </script>
 
